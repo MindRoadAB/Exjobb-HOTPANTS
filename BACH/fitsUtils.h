@@ -8,20 +8,29 @@
 
 struct Image {
   std::string name;
+  std::string path;
   std::string outName; 
   std::valarray<float> data;
   long axis[2];
 
-  Image(const std::string inN) : name{inN}, outName{"!out_" + inN}, data{}, axis{} {}
-  Image(const std::string inN, long* inA) : name{inN}, outName{"!out_" + inN}, data{} {
+  Image(const std::string inN) : name{inN}, path{"res/"}, outName{"out_" + inN}, data{}, axis{} {}
+  Image(const std::string inN, const std::string inP, long* inA) : name{inN}, path{inP}, outName{"out_" + inN}, data{} {
     axis [0] = inA [0];
     axis [1] = inA [1]; 
+  }
+
+  std::string getFile (){
+    return path+name;
+  }
+  
+  std::string getOutFile (){
+    return path+outName;
   }
   
 };
 
 int readImage(Image& input) {
-  std::unique_ptr<CCfits::FITS> pIn(new CCfits::FITS(input.name, CCfits::RWmode::Read, true));
+  std::unique_ptr<CCfits::FITS> pIn(new CCfits::FITS(input.getFile(), CCfits::RWmode::Read, true));
   CCfits::PHDU& img = pIn->pHDU();
 
   img.readAllKeys();
@@ -42,7 +51,7 @@ int writeImage(Image& img) {
   std::unique_ptr<CCfits::FITS> pFits{};
 
   try {
-    pFits.reset(new CCfits::FITS(img.outName, FLOAT_IMG, nAxis, img.axis));
+    pFits.reset(new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis, img.axis));
     std::cout << img.axis[0];
   } catch(CCfits::FITS::CantCreate) {
     return -1;

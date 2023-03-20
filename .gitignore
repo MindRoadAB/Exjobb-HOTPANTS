@@ -7,6 +7,7 @@
 !*.cpp
 !*.h
 !fitstest/res/*
+fitstest/res/out_*
 
 # Don't ignore all subfolders
 !*/
