@@ -6,6 +6,7 @@
 !.vsls.json
 !*.cpp
 !*.h
+!fitstest/res/*
 
 # Don't ignore all subfolders
 !*/
