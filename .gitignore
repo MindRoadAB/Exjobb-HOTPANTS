@@ -1,13 +1,11 @@
 # Ignore Everything
 *
 
-# Don't ignore all subfolders
-!*/
-
 # Don't ignore these files
 !Makefile
 !.vsls.json
 !*.cpp
 !*.h
-!*
 
+# Don't ignore all subfolders
+!*/
