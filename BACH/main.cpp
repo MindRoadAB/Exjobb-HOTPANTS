@@ -1,27 +1,26 @@
-#include "fitsUtil.h"
-#include "argsUtil.h"
 #include <iostream>
 
+#include "argsUtil.h"
+#include "fitsUtil.h"
 
 int main(int argc, char* argv[]) {
-    CCfits::FITS::setVerboseMode(true);
-    Arguments args{};
-    
-    try {
-        args = getArguments(argc, argv);   
-    } catch (const std::invalid_argument& err) {
-        std::cout << err.what() << '\n';
-        return 1;
-    }
-    
+  CCfits::FITS::setVerboseMode(true);
+  Arguments args{};
 
-    Image templateImg{args.templateName};
-    Image scienceImg{args.scienceName};
+  try {
+    args = getArguments(argc, argv);
+  } catch(const std::invalid_argument& err) {
+    std::cout << err.what() << '\n';
+    return 1;
+  }
 
-    readImage(templateImg);
+  Image templateImg{args.templateName};
+  Image scienceImg{args.scienceName};
 
-    Image outImg{args.outName, args.outPath, templateImg.data, templateImg.axis};
-    writeImage(outImg);
+  readImage(templateImg);
 
-    return 0;
+  Image outImg{args.outName, args.outPath, templateImg.data, templateImg.axis};
+  writeImage(outImg);
+
+  return 0;
 }

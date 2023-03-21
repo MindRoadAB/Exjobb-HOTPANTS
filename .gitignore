@@ -9,6 +9,7 @@
 !fitstest/res/*
 fitstest/res/out_*
 !BACH/res/*
+!.clang-format
 
 
 # Don't ignore all subfolders
