@@ -4,7 +4,8 @@ int main() {
   Image templImg{"template2.fits"};
   CCfits::FITS::setVerboseMode(true);
   readImage(templImg);
-  writeImage(templImg);
+  if(writeImage(templImg) != 0)
+    return -1;
  
   Image written{"out_template2.fits"};
   readImage(written);

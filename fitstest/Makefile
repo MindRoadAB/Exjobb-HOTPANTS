@@ -5,6 +5,7 @@ LIBS  = -lCCfits -lcfitsio
 CC    = g++
 
 all: 
+	rm res/out_*
 	$(CC) main.cpp -o test $(LIBS) $(COPTS)
 
 debug: 

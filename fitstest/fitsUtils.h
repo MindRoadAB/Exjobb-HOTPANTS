@@ -25,13 +25,13 @@ struct Image {
   }
 
   std::string getOutFile (){
-    return path+outName;
+    return "!"+path+outName;
   }
 
 };
 
 int readImage(Image& input) {
-  std::unique_ptr<CCfits::FITS> pIn(new CCfits::FITS(input.getFile(), CCfits::RWmode::Read, true));
+  CCfits::FITS* pIn{new CCfits::FITS(input.getFile(), CCfits::RWmode::Read, true)};
   CCfits::PHDU& img = pIn->pHDU();
 
   img.readAllKeys();
@@ -44,17 +44,20 @@ int readImage(Image& input) {
 
   std::cout << img << std::endl;
   std::cout << pIn->extension().size() << std::endl;
+
+  delete pIn;
   return 0;
 }
 
 int writeImage(Image& img) {
   long nAxis = 2;
-  std::unique_ptr<CCfits::FITS> pFits{};
+  CCfits::FITS* pFits{};
 
   try {
-    pFits.reset(new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis, img.axis));
+    pFits = new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis, img.axis);
     std::cout << img.axis[0];
   } catch(CCfits::FITS::CantCreate) {
+    delete pFits;
     return -1;
   }
 
@@ -65,7 +68,7 @@ int writeImage(Image& img) {
 
   std::cout << pFits->pHDU() << std::endl;
   std::cout << pFits->extension().size() << std::endl;
-  pFits.reset();
 
+  delete pFits;
   return 0;
 }
