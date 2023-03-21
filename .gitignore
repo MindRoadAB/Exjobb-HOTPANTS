@@ -8,6 +8,8 @@
 !*.h
 !fitstest/res/*
 fitstest/res/out_*
+!BACH/res/*
+
 
 # Don't ignore all subfolders
 !*/
