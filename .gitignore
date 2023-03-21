@@ -8,7 +8,7 @@
 !*.h
 !fitstest/res/*
 fitstest/res/out_*
-!BACH/res/*
+!BACH/res/*.fits
 !.clang-format
 
 

@@ -1,10 +1,11 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef FITS_UTIL
+#define FITS_UTIL
 
 #include <CCfits/CCfits>
 #include <memory>
 #include <string>
+
+#include "argsUtil.h"
 
 struct Image {
   std::string name;
@@ -38,7 +39,20 @@ struct Image {
 
   std::string getFile() { return path + name; }
 
+  std::string getFileName() {
+    size_t lastI = name.find_last_of(".");
+    return name.substr(0, lastI);
+  }
+
   std::string getOutFile() { return "!" + path + name; }
+
+  long* axis_to_array() {
+    static long tmpAx[2];
+    tmpAx[0] = axis.first;
+    tmpAx[1] = axis.second;
+    long* ptr = tmpAx;
+    return ptr;
+  }
 };
 
 int readImage(Image& input) {
@@ -50,9 +64,10 @@ int readImage(Image& input) {
   }
   CCfits::PHDU& img = pIn->pHDU();
 
+  // Ifloat = -32, Idouble = -64
   long type = img.bitpix();
   if(type != CCfits::Ifloat && type != CCfits::Idouble) {
-    throw std::invalid_argument("fits image of type " + std::to_string(type) +
+    throw std::invalid_argument("fits image of type" + std::to_string(type) +
                                 " is not supported.");
     return -1;
   }
@@ -65,8 +80,10 @@ int readImage(Image& input) {
   input.axis.first = ax1;
   input.axis.second = ax2;
 
-  /*   std::cout << img << std::endl;
-    std::cout << pIn->extension().size() << std::endl; */
+  if(args.verbose) {
+    std::cout << img << std::endl;
+    std::cout << pIn->extension().size() << std::endl;
+  }
 
   delete pIn;
   return 0;
@@ -77,24 +94,24 @@ int writeImage(Image& img) {
   CCfits::FITS* pFits{};
 
   try {
-    long tmpAx[2];
-    tmpAx[0] = img.axis.first;
-    tmpAx[1] = img.axis.second;
-    pFits = new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis, tmpAx);
+    pFits = new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis,
+                             img.axis_to_array());
   } catch(CCfits::FITS::CantCreate) {
     delete pFits;
     return -1;
   }
 
-  long nEl = std::accumulate(&img.axis.first, &img.axis.second, 1,
-                             std::multiplies<long>());
   long fpixel(1);
 
-  pFits->pHDU().write(fpixel, nEl, img.data);
+  pFits->pHDU().write(fpixel, img.data.size(), img.data);
 
-  /*  std::cout << pFits->pHDU() << std::endl;
-    std::cout << pFits->extension().size() << std::endl; */
+  if(args.verbose) {
+    std::cout << pFits->pHDU() << std::endl;
+    std::cout << pFits->extension().size() << std::endl;
+  }
 
   delete pFits;
   return 0;
 }
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef ARG_UTIL
+#define ARG_UTIL
+
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -11,6 +14,8 @@ struct Arguments {
 
   std::string inputPath = "res/";
   std::string outPath = "out/";
+
+  bool verbose = false;
 };
 
 char* getCmdOption(char** begin, char** end, const std::string& option) {
@@ -25,8 +30,9 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option) {
   return std::find(begin, end, option) != end;
 }
 
-Arguments getArguments(int argc, char* argv[]) {
-  Arguments args;
+Arguments args{};
+
+void getArguments(int argc, char* argv[]) {
   if(cmdOptionExists(argv, argv + argc, "-o")) {
     args.outName = getCmdOption(argv, argv + argc, "-o");
   }
@@ -39,19 +45,23 @@ Arguments getArguments(int argc, char* argv[]) {
     args.inputPath = getCmdOption(argv, argv + argc, "-ip");
   }
 
+  if(cmdOptionExists(argv, argv + argc, "-v")) {
+    args.verbose = true;
+  }
+
   if(cmdOptionExists(argv, argv + argc, "-t")) {
     args.templateName = getCmdOption(argv, argv + argc, "-t");
   } else {
     throw std::invalid_argument("Template file Input is required!");
-    return args;
+    return;
   }
 
   if(cmdOptionExists(argv, argv + argc, "-s")) {
     args.scienceName = getCmdOption(argv, argv + argc, "-t");
   } else {
     throw std::invalid_argument("Science file input is required!");
-    return args;
+    return;
   }
-
-  return args;
 }
+
+#endif

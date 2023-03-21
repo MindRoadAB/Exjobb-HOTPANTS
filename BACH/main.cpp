@@ -5,10 +5,9 @@
 
 int main(int argc, char* argv[]) {
   CCfits::FITS::setVerboseMode(true);
-  Arguments args{};
 
   try {
-    args = getArguments(argc, argv);
+    getArguments(argc, argv);
   } catch(const std::invalid_argument& err) {
     std::cout << err.what() << '\n';
     return 1;
