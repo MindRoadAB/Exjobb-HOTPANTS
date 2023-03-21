@@ -10,8 +10,8 @@ struct Image {
   std::string name;
   std::string path;
   std::string outName;
-  std::valarray<float> data;
-  /* std::map<string,CCfits::Keyword*>& keywords; */
+  std::valarray<double> data;
+
   long axis[2];
 
   Image(const std::string inN) : name{inN}, path{"res/"}, outName{"out_" + inN}, data{}, axis{} {}
@@ -30,9 +30,16 @@ struct Image {
 
 };
 
+
 int readImage(Image& input) {
   CCfits::FITS* pIn{new CCfits::FITS(input.getFile(), CCfits::RWmode::Read, true)};
   CCfits::PHDU& img = pIn->pHDU();
+
+  long type = img.bitpix();
+  if(type != CCfits::Ifloat && type != CCfits::Idouble) {
+    throw std::invalid_argument("fits image of type " + std::to_string(type) + " is not supported.");
+    return -1;
+  }
 
   img.readAllKeys();
   img.read(input.data);
@@ -42,12 +49,13 @@ int readImage(Image& input) {
   input.axis[0] = ax1;
   input.axis[1] = ax2;
 
-  std::cout << img << std::endl;
-  std::cout << pIn->extension().size() << std::endl;
+/*   std::cout << img << std::endl;
+  std::cout << pIn->extension().size() << std::endl; */
 
   delete pIn;
   return 0;
 }
+
 
 int writeImage(Image& img) {
   long nAxis = 2;
@@ -55,7 +63,6 @@ int writeImage(Image& img) {
 
   try {
     pFits = new CCfits::FITS(img.getOutFile(), FLOAT_IMG, nAxis, img.axis);
-    std::cout << img.axis[0];
   } catch(CCfits::FITS::CantCreate) {
     delete pFits;
     return -1;
@@ -66,8 +73,8 @@ int writeImage(Image& img) {
 
   pFits->pHDU().write(fpixel, nEl, img.data);
 
-  std::cout << pFits->pHDU() << std::endl;
-  std::cout << pFits->extension().size() << std::endl;
+/*  std::cout << pFits->pHDU() << std::endl;
+  std::cout << pFits->extension().size() << std::endl; */
 
   delete pFits;
   return 0;
