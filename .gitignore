@@ -6,6 +6,7 @@
 !.vsls.json
 !*.cpp
 !*.h
+!*.cl
 !fitstest/res/*
 fitstest/res/out_*
 !BACH/res/*.fits
