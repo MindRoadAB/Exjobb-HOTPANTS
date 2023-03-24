@@ -29,12 +29,8 @@ inline cl::Device get_default_device() {
   return default_device;
 }
 
-std::string const DEFAULT_PATH = "cl_kern/";
 inline std::string get_kernel_func(std::string &&file_name,
-                                   std::string &&path = "NULL") {
-  if(path == "NULL") {
-    path = DEFAULT_PATH;
-  }
+                                   std::string &&path = "cl_kern/") {
   std::ifstream t(path + file_name);
   std::string tmp{std::istreambuf_iterator<char>{t},
                   std::istreambuf_iterator<char>{}};

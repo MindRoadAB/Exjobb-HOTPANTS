@@ -19,7 +19,7 @@ int main() {
     cl::Context context({default_device});
 
     cl::Program::Sources sources;
-    string kernel_code = get_kernel_func("conv.cl", "");
+    string kernel_code = get_kernel_func("conv_old.cl", "");
     sources.push_back({kernel_code.c_str(), kernel_code.length()});
     cl::Program program(context, sources);
     if(program.build({default_device}) != CL_SUCCESS) {
@@ -38,54 +38,75 @@ int main() {
     cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(pixel) * w * h);
     cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(pixel) * w * h);
 
-    cl::Buffer kernbuf(context, CL_MEM_READ_WRITE, sizeof(float) * 9);
     // gaussian
+    // int kernWidth = 3;
     // float a = 1.0f/16.0f;
     // float b = 2.0f/16.0f;
     // float c = 4.0f/16.0f;
     // float convkern[] = {a, b, a, b, c, b, a, b, a};
 
     // box
+    // int kernWidth = 3;
     // float a = 1.0f/9.0f;
     // float convkern[] = {a, a, a, a, a, a, a, a, a};
 
+    // box 2x2
+    // int kernWidth = 2;
+    // float a = 1.0f / 4.0f;
+    // float convkern[] = {a, a, a, a};
+
+    // box 5x5
+    // int kernWidth = 5;
+    // float a = 1.0f / 25.0f;
+    // float convkern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
+    //                     a, a, a, a, a, a, a, a, a, a, a, a};
+
     // ridge/edge
+    // int kernWidth = 3;
     // float a = 0.0f;
     // float b = -1.0f;
     // float c = 4.0f;
     // float convkern[] = {a, b, a, b, c, b, a, b, a};
 
-    // ridge/edge
+    // // ridge/edge
+    // int kernWidth = 3;
     // float a = -1.0f;
     // float b = 8.0f;
     // float convkern[] = {a, a, a, a, b, a, a, a, a};
 
     // sharp
+    int kernWidth = 3;
     float a = 0.0f;
     float b = -0.5f;
     float c = 3.0f;
     float convkern[] = {a, b, a, b, c, b, a, b, a};
 
-    cl::Buffer buffer_C(context, CL_MEM_READ_WRITE, sizeof(int) * 10);
+    cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
+                       sizeof(float) * kernWidth * kernWidth);
+    cl::Buffer buffer_C(context, CL_MEM_READ_WRITE,
+                        sizeof(int) * kernWidth * kernWidth);
 
     cl::CommandQueue queue(context, default_device);
 
-    queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0, sizeof(float) * 9, convkern);
+    queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
+                             sizeof(float) * kernWidth * kernWidth, convkern);
     queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(pixel) * w * h, image);
 
-    cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, int, int, cl::Buffer>
+    cl::KernelFunctor<cl::Buffer, int, cl::Buffer, cl::Buffer, int, int,
+                      cl::Buffer>
         conv{program, "conv"};
     cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                           cl::NullRange};
-    conv(eargs, kernbuf, imgbuf, outimgbuf, w, h, buffer_C);
+    conv(eargs, kernbuf, kernWidth, imgbuf, outimgbuf, w, h, buffer_C);
 
     pixel *outimg = new pixel[w * h];
     queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0, sizeof(pixel) * w * h,
                             outimg);
-    int C[10];
-    queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, sizeof(int) * 10, C);
+    int C[25];
+    queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0,
+                            sizeof(int) * kernWidth * kernWidth, C);
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < kernWidth * kernWidth; i++) {
       cout << C[i] << " ";
     }
 
