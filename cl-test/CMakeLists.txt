@@ -121,7 +121,6 @@ set(Header_Files
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
-    "convolve.cpp"
     "main.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
