@@ -11,6 +11,8 @@
 fitstest/res/out_*
 !BACH/res/*.fits
 !.clang-format
+!CMakeLists.txt
+build/*
 
 
 # Don't ignore all subfolders
