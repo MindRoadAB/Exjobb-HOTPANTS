@@ -76,20 +76,20 @@ int main() {
 
     // sharp
     int kernWidth = 3;
-    float a = 0.0f;
-    float b = -0.5f;
-    float c = 3.0f;
-    float convkern[] = {a, b, a, b, c, b, a, b, a};
+    double a = 0.0;
+    double b = -0.5;
+    double c = 3.0;
+    double convkern[] = {a, b, a, b, c, b, a, b, a};
 
     cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
-                       sizeof(float) * kernWidth * kernWidth);
+                       sizeof(double) * kernWidth * kernWidth);
     cl::Buffer buffer_C(context, CL_MEM_READ_WRITE,
                         sizeof(int) * kernWidth * kernWidth);
 
     cl::CommandQueue queue(context, default_device);
 
     queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
-                             sizeof(float) * kernWidth * kernWidth, convkern);
+                             sizeof(double) * kernWidth * kernWidth, convkern);
     queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(pixel) * w * h, image);
 
     cl::KernelFunctor<cl::Buffer, int, cl::Buffer, cl::Buffer, int, int,

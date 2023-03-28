@@ -5,10 +5,10 @@ LIBS  = -lCCfits -lcfitsio -lOpenCL
 CC    = g++
 
 all:
-	$(CC) convolve.cpp -o test $(LIBS) $(COPTS)
+	$(CC) main.cpp -o test $(LIBS) $(COPTS)
 
 debug:
-	$(CC) convolve.cpp -o test $(LIBS) -g $(COPTS)
+	$(CC) main.cpp -o test $(LIBS) -g $(COPTS)
 
 clean:
 	rm *.o
