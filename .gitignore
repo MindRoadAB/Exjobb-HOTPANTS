@@ -7,8 +7,6 @@
 !*.cpp
 !*.h
 !*.cl
-!fitstest/res/*
-fitstest/res/out_*
 !BACH/res/*.fits
 !.clang-format
 !CMakeLists.txt

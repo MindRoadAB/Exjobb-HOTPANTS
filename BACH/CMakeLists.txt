@@ -116,7 +116,6 @@ set(Header_Files
     "argsUtil.h"
     "clUtil.h"
     "fitsUtil.h"
-    "ppmio.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
