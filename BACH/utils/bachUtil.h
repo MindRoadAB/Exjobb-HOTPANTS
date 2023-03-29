@@ -5,20 +5,22 @@
 #include <iostream>
 #include <utility>
 
+struct SubStamp {
+  std::pair<cl_long, cl_long> subStampCoords{};
+};
+
 struct Stamp {
   cl_double* stampData{};
-  std::pair<cl_int, cl_int> stampCoords{};
-  std::pair<cl_int, cl_int> stampSize{};
-  std::pair<cl_int, cl_int> subStampCoords{};
+  std::pair<cl_long, cl_long> stampCoords{};
+  std::pair<cl_long, cl_long> stampSize{};
+  std::vector<SubStamp> subStamps{};
 
   ~Stamp() { delete stampData; }
-  Stamp(cl_double* stampData, std::pair<cl_int, cl_int> stampCoords,
-        std::pair<cl_int, cl_int> stampSize,
-        std::pair<cl_int, cl_int> subStampCoords)
-      : stampCoords{stampCoords},
-        stampSize{stampSize},
-        subStampCoords{subStampCoords} {
-    for(cl_int i = 0; i < stampSize.first * stampSize.second; i++) {
+  Stamp(cl_double* stampData, std::pair<cl_long, cl_long> stampCoords,
+        std::pair<cl_long, cl_long> stampSize,
+        const std::vector<SubStamp>& subStamps)
+      : stampCoords{stampCoords}, stampSize{stampSize}, subStamps{subStamps} {
+    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
       this->stampData[i] = stampData[i];
     }
   }
@@ -26,8 +28,8 @@ struct Stamp {
   Stamp(const Stamp& other)
       : stampCoords{other.stampCoords},
         stampSize{other.stampSize},
-        subStampCoords{other.subStampCoords} {
-    for(cl_int i = 0; i < stampSize.first * stampSize.second; i++) {
+        subStamps{other.subStamps} {
+    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
       this->stampData[i] = other.stampData[i];
     }
   }
@@ -36,13 +38,13 @@ struct Stamp {
       : stampData{std::exchange(other.stampData, nullptr)},
         stampCoords{other.stampCoords},
         stampSize{other.stampSize},
-        subStampCoords{other.subStampCoords} {}
+        subStamps{std::move(other.subStamps)} {}
 
   Stamp& operator=(const Stamp& other) {
     this->stampCoords = other.stampCoords;
     this->stampSize = other.stampSize;
-    this->subStampCoords = other.subStampCoords;
-    for(cl_int i = 0; i < stampSize.first * stampSize.second; i++) {
+    this->subStamps = other.subStamps;
+    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
       this->stampData[i] = other.stampData[i];
     }
     return *this;
@@ -51,8 +53,8 @@ struct Stamp {
   Stamp& operator=(Stamp&& other) {
     this->stampCoords = other.stampCoords;
     this->stampSize = other.stampSize;
-    this->subStampCoords = other.subStampCoords;
-    stampData = std::exchange(other.stampData, nullptr);
+    this->subStamps = std::move(other.subStamps);
+    this->stampData = std::exchange(other.stampData, nullptr);
     return *this;
   }
 };
