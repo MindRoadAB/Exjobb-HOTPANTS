@@ -58,6 +58,7 @@ cl::Program load_build_programs(cl::Context context, cl::Device default_device,
   cl::Program::Sources sources;
   for(auto n : {names...}) {
     std::string code = get_kernel_func(n);
+
     sources.push_back({code.c_str(), code.length()});
   }
 
