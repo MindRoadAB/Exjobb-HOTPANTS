@@ -35,19 +35,8 @@ int main(int argc, char* argv[]) {
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
 
-  cl::Program::Sources sources;
-  std::string convCode = get_kernel_func("conv.cl");
-  sources.push_back({convCode.c_str(), convCode.length()});
-  std::string subCode = get_kernel_func("sub.cl");
-  sources.push_back({subCode.c_str(), subCode.length()});
-
-  cl::Program program(context, sources);
-  if(program.build({default_device}) != CL_SUCCESS) {
-    std::cout << " Error building: "
-              << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device)
-              << "\n";
-    exit(1);
-  }
+  cl::Program program =
+      load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
   cl_long w = templateImg.axis.first;
   cl_long h = templateImg.axis.second;
