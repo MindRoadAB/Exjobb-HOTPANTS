@@ -27,9 +27,9 @@ int main(int argc, char* argv[]) {
   cl::Context context{default_device};
 
   cl::Program::Sources sources;
-  string convCode = get_kernel_func("conv.cl", "");
+  string convCode = get_kernel_func("conv.cl");
   sources.push_back({convCode.c_str(), convCode.length()});
-  string subCode = get_kernel_func("sub.cl", "");
+  string subCode = get_kernel_func("sub.cl");
   sources.push_back({subCode.c_str(), subCode.length()});
 
   cl::Program program(context, sources);
