@@ -1,3 +1,6 @@
+#ifndef CL_UTIL
+#define CL_UTIL
+
 #include <CL/opencl.hpp>
 #include <chrono>
 #include <fstream>
@@ -72,3 +75,4 @@ cl::Program load_build_programs(cl::Context context, cl::Device default_device,
 
   return program;
 }
+#endif

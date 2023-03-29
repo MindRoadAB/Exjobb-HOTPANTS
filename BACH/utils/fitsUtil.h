@@ -55,7 +55,7 @@ struct Image {
   }
 };
 
-int readImage(Image& input) {
+inline int readImage(Image& input) {
   CCfits::FITS* pIn{};
   try {
     pIn = new CCfits::FITS(input.getFile(), CCfits::RWmode::Read, true);
@@ -89,7 +89,7 @@ int readImage(Image& input) {
   return 0;
 }
 
-int writeImage(Image& img) {
+inline int writeImage(Image& img) {
   long nAxis = 2;
   CCfits::FITS* pFits{};
 
