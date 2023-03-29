@@ -4,9 +4,9 @@
 #include <iostream>
 #include <vector>
 
-#include "argsUtil.h"
-#include "clUtil.h"
-#include "fitsUtil.h"
+#include "utils/argsUtil.h"
+#include "utils/clUtil.h"
+#include "utils/fitsUtil.h"
 
 void checkError(cl_int err) {
   if(err != 0) {
