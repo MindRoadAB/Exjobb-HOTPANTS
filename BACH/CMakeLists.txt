@@ -82,41 +82,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Sub-projects
 ################################################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-set(PROJECT_NAME cl-test)
+set(PROJECT_NAME BACH)
 
 ################################################################################
 # Source groups
 ################################################################################
 set(Header_Files
-    "argsUtil.h"
-    "clUtil.h"
-    "fitsUtil.h"
+    "utils/argsUtil.h"
+    "utils/clUtil.h"
+    "utils/fitsUtil.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
