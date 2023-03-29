@@ -32,13 +32,7 @@ int main(int argc, char* argv[]) {
   cl::Program program =
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
-  cl_long w = templateImg.axis.first;
-  cl_long h = templateImg.axis.second;
-
-  cl_double* inputImage = new cl_double[w * h];
-  for(cl_uint i = 0; i < templateImg.data.size(); i++) {
-    inputImage[i] = templateImg.data[i];
-  }
+  auto [w, h] = templateImg.axis;
 
   cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
@@ -59,7 +53,7 @@ int main(int argc, char* argv[]) {
       kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
   checkError(err);
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 inputImage);
+                                 templateImg.data);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -69,26 +63,22 @@ int main(int argc, char* argv[]) {
                         cl::NullRange};
   conv(eargs, kernbuf, kernWidth, imgbuf, outimgbuf, w, h);
 
-  cl_double* outputImage = new cl_double[w * h];
+  Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, outputImage);
+                                sizeof(cl_double) * w * h, outImg.data);
   checkError(err);
 
-  std::valarray<cl_double> outDat{outputImage, (size_t)(w * h)};
-  Image outImg{args.outName, args.outPath, outDat, templateImg.axis};
   err = writeImage(outImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
   sub(eargs, outimgbuf, imgbuf, diffimgbuf);
 
-  cl_double* diffImage = new cl_double[w * h];
+  Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, diffImage);
+                                sizeof(cl_double) * w * h, diffImg.data);
   checkError(err);
 
-  std::valarray<cl_double> diffDat{diffImage, (size_t)(w * h)};
-  Image diffImg{"sub.fits", args.outPath, diffDat, templateImg.axis};
   err = writeImage(diffImg);
   checkError(err);
 
