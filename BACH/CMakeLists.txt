@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
-project(cl-test CXX)
+project(BACH CXX)
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.

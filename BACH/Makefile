@@ -5,10 +5,10 @@ LIBS  = -lCCfits -lcfitsio -lOpenCL
 CC    = g++
 
 all:
-	$(CC) main.cpp -o test $(LIBS) $(COPTS)
+	$(CC) main.cpp -o BACH $(LIBS) $(COPTS)
 
 debug:
-	$(CC) main.cpp -o test $(LIBS) -g $(COPTS)
+	$(CC) main.cpp -o BACH $(LIBS) -g $(COPTS)
 
 clean:
 	rm *.o
