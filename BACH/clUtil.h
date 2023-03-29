@@ -51,3 +51,22 @@ inline void print_time(std::ostream &os, timePoint start, timePoint stop) {
             .count()
      << std::endl;
 }
+
+template<typename... Args>
+cl::Program load_build_programs(cl::Context context, cl::Device default_device, Args... names) {
+  cl::Program::Sources sources;
+  for(auto n : {names...}) {
+    string code = get_kernel_func(n, "");
+    sources.push_back({code.c_str(), code.length()});
+  }
+
+  cl::Program program(context, sources);
+  if(program.build({default_device}) != CL_SUCCESS) {
+    std::cout << " Error building: "
+              << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device)
+              << "\n";
+    exit(1);
+  }
+
+  return program;
+}
