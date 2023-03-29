@@ -88,7 +88,7 @@ inline cl_int readImage(Image& input) {
   }
   CCfits::PHDU& img = pIn->pHDU();
 
-  // Ifloat = -32, Icl_double = -64
+  // Ifloat = -32, Idouble = -64
   cl_long type = img.bitpix();
   if(type != CCfits::Ifloat && type != CCfits::Idouble) {
     throw std::invalid_argument("fits image of type" + std::to_string(type) +
