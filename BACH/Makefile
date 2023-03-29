@@ -1,15 +1,15 @@
 COPTS = -std=c++20 -pedantic -Wall -Wextra -fcommon
-LIBS  = -lCCfits -lcfitsio
+LIBS  = -lCCfits -lcfitsio -lOpenCL
 
 # compiler
 CC    = g++
 
-all: 
+all:
 	$(CC) main.cpp -o test $(LIBS) $(COPTS)
 
-debug: 
-	$(CC) main.cpp -o test $(LIBS) -g $(COPTS)	
+debug:
+	$(CC) main.cpp -o test $(LIBS) -g $(COPTS)
 
-clean: 
+clean:
 	rm *.o
 	rm test

@@ -1,12 +1,12 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 300
 
-#include <iostream>
 #include <CL/opencl.hpp>
+#include <iostream>
 #include <vector>
 
 #include "argsUtil.h"
-#include "fitsUtil.h"
 #include "clUtil.h"
+#include "fitsUtil.h"
 
 int main(int argc, char* argv[]) {
   CCfits::FITS::setVerboseMode(true);
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
-  
+
   cl::Program::Sources sources;
   string convCode = get_kernel_func("conv.cl", "");
   sources.push_back({convCode.c_str(), convCode.length()});
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
               << "\n";
     exit(1);
   }
-  
+
   cl_long w = templateImg.axis.first;
   cl_long h = templateImg.axis.second;
 
@@ -55,35 +55,41 @@ int main(int argc, char* argv[]) {
 
   // box 5x5
   cl_long kernWidth = 5;
-  double a = 1.0 / (double) (kernWidth * kernWidth);
+  double a = 1.0 / (double)(kernWidth * kernWidth);
   double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
-                      a, a, a, a, a, a, a, a, a, a, a, a};
-  cl::Buffer kernbuf(context, CL_MEM_READ_WRITE, sizeof(double) * kernWidth * kernWidth);
-  
+                       a, a, a, a, a, a, a, a, a, a, a, a};
+  cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
+                     sizeof(double) * kernWidth * kernWidth);
+
   cl::CommandQueue queue(context, default_device);
 
-  queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0, sizeof(double) * kernWidth * kernWidth, convKern);
-  queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(double) * w * h, inputImage);
+  queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
+                           sizeof(double) * kernWidth * kernWidth, convKern);
+  queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(double) * w * h,
+                           inputImage);
 
-  cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long, cl_long> conv{program, "conv"};
-  cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h), cl::NullRange};
+  cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
+                    cl_long>
+      conv{program, "conv"};
+  cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
+                        cl::NullRange};
   conv(eargs, kernbuf, kernWidth, imgbuf, outimgbuf, w, h);
 
   double* outputImage = new double[w * h];
-  cl_int err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0, sizeof(double) * w * h,
-                          outputImage);
+  cl_int err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
+                                       sizeof(double) * w * h, outputImage);
 
-  std::valarray<double> outDat{outputImage, (size_t) (w * h)};
+  std::valarray<double> outDat{outputImage, (size_t)(w * h)};
   Image outImg{args.outName, args.outPath, outDat, templateImg.axis};
   writeImage(outImg);
-  
+
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
   sub(eargs, outimgbuf, imgbuf, diffimgbuf);
 
   double* diffImage = new double[w * h];
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0, sizeof(double) * w * h,
-                          diffImage);
-  std::valarray<double> diffDat{diffImage, (size_t) (w * h)};
+                                diffImage);
+  std::valarray<double> diffDat{diffImage, (size_t)(w * h)};
   Image diffImg{"sub.fits", args.outPath, diffDat, templateImg.axis};
   writeImage(diffImg);
 
