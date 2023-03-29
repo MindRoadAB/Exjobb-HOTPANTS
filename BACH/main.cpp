@@ -1,4 +1,3 @@
-#include <CL/cl_platform.h>
 #define CL_HPP_TARGET_OPENCL_VERSION 300
 
 #include <CL/opencl.hpp>
@@ -8,6 +7,13 @@
 #include "argsUtil.h"
 #include "clUtil.h"
 #include "fitsUtil.h"
+
+void checkError(cl_int err) {
+  if(err != 0) {
+    std::cout << "Error encountered with error code: " << err << std::endl;
+    exit(err);
+  }
+}
 
 int main(int argc, char* argv[]) {
   CCfits::FITS::setVerboseMode(true);
@@ -21,8 +27,10 @@ int main(int argc, char* argv[]) {
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
+  cl_int err{};
 
-  readImage(templateImg);
+  err = readImage(templateImg);
+  checkError(err);
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -64,10 +72,12 @@ int main(int argc, char* argv[]) {
 
   cl::CommandQueue queue(context, default_device);
 
-  queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
-                           sizeof(cl_double) * kernWidth * kernWidth, convKern);
-  queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                           inputImage);
+  err = queue.enqueueWriteBuffer(
+      kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
+  checkError(err);
+  err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 inputImage);
+  checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
                     cl_long>
@@ -77,12 +87,14 @@ int main(int argc, char* argv[]) {
   conv(eargs, kernbuf, kernWidth, imgbuf, outimgbuf, w, h);
 
   cl_double* outputImage = new cl_double[w * h];
-  cl_int err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                       sizeof(cl_double) * w * h, outputImage);
+  err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
+                                sizeof(cl_double) * w * h, outputImage);
+  checkError(err);
 
   std::valarray<cl_double> outDat{outputImage, (size_t)(w * h)};
   Image outImg{args.outName, args.outPath, outDat, templateImg.axis};
-  writeImage(outImg);
+  err = writeImage(outImg);
+  checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
   sub(eargs, outimgbuf, imgbuf, diffimgbuf);
@@ -90,9 +102,12 @@ int main(int argc, char* argv[]) {
   cl_double* diffImage = new cl_double[w * h];
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
                                 sizeof(cl_double) * w * h, diffImage);
+  checkError(err);
+
   std::valarray<cl_double> diffDat{diffImage, (size_t)(w * h)};
   Image diffImg{"sub.fits", args.outPath, diffDat, templateImg.axis};
-  writeImage(diffImg);
+  err = writeImage(diffImg);
+  checkError(err);
 
   return 0;
 }
