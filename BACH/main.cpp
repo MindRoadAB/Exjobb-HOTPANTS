@@ -27,8 +27,10 @@ int main(int argc, char* argv[]) {
   cl::Context context{default_device};
   
   cl::Program::Sources sources;
-  string kernel_code = get_kernel_func("conv.cl", "");
-  sources.push_back({kernel_code.c_str(), kernel_code.length()});
+  string convCode = get_kernel_func("conv.cl", "");
+  sources.push_back({convCode.c_str(), convCode.length()});
+  string subCode = get_kernel_func("sub.cl", "");
+  sources.push_back({subCode.c_str(), subCode.length()});
 
   cl::Program program(context, sources);
   if(program.build({default_device}) != CL_SUCCESS) {
@@ -49,6 +51,7 @@ int main(int argc, char* argv[]) {
 
   cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(double) * w * h);
+  cl::Buffer diffimgbuf(context, CL_MEM_READ_WRITE, sizeof(double) * w * h);
 
   // box 5x5
   cl_long kernWidth = 5;
@@ -71,16 +74,18 @@ int main(int argc, char* argv[]) {
                           outputImage);
 
   std::valarray<double> outDat{outputImage, (size_t) (w * h)};
-  for(long i = 0; i < w * h; i++) {
-    // outDat += outputImage[i];
-    if(outputImage == 0) {
-      std::cout << "pix nr." << i << " is zero\n";
-    }
-    // std::cout << outDat[i] << " ";
-  }
-
   Image outImg{args.outName, args.outPath, outDat, templateImg.axis};
   writeImage(outImg);
+  
+  cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
+  sub(eargs, outimgbuf, imgbuf, diffimgbuf);
+
+  double* diffImage = new double[w * h];
+  err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0, sizeof(double) * w * h,
+                          diffImage);
+  std::valarray<double> diffDat{diffImage, (size_t) (w * h)};
+  Image diffImg{"sub.fits", args.outPath, diffDat, templateImg.axis};
+  writeImage(diffImg);
 
   return 0;
 }
