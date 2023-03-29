@@ -18,7 +18,7 @@ struct Arguments {
   bool verbose = false;
 };
 
-char* getCmdOption(char** begin, char** end, const std::string& option) {
+inline char* getCmdOption(char** begin, char** end, const std::string& option) {
   char** itr = std::find(begin, end, option);
   if(itr != end && ++itr != end) {
     return *itr;
@@ -26,13 +26,14 @@ char* getCmdOption(char** begin, char** end, const std::string& option) {
   return 0;
 }
 
-bool cmdOptionExists(char** begin, char** end, const std::string& option) {
+inline bool cmdOptionExists(char** begin, char** end,
+                            const std::string& option) {
   return std::find(begin, end, option) != end;
 }
 
-Arguments args{};
+inline Arguments args{};
 
-void getArguments(int argc, char* argv[]) {
+inline void getArguments(int argc, char* argv[]) {
   if(cmdOptionExists(argv, argv + argc, "-o")) {
     args.outName = getCmdOption(argv, argv + argc, "-o");
   }

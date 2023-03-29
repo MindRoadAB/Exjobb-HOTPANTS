@@ -4,16 +4,10 @@
 #include <iostream>
 #include <vector>
 
-#include "argsUtil.h"
-#include "clUtil.h"
-#include "fitsUtil.h"
-
-void checkError(cl_int err) {
-  if(err != 0) {
-    std::cout << "Error encountered with error code: " << err << std::endl;
-    exit(err);
-  }
-}
+#include "utils/argsUtil.h"
+#include "utils/bachUtil.h"
+#include "utils/clUtil.h"
+#include "utils/fitsUtil.h"
 
 int main(int argc, char* argv[]) {
   CCfits::FITS::setVerboseMode(true);
