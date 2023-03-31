@@ -5,6 +5,7 @@
 #include <CL/opencl.hpp>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "argsUtil.h"
 
@@ -12,31 +13,25 @@ struct Image {
   std::string name;
   std::string path;
   std::pair<cl_long, cl_long> axis;
-  cl_double* data;
+  std::vector<cl_double> data{};
 
-  ~Image() { delete data; }
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
         const std::string p = "res/")
-      : name{n}, path{p}, axis{a} {
-    data = new cl_double[this->size()];
-  }
-  Image(const std::string n, cl_double* d, std::pair<cl_long, cl_long> a,
-        const std::string p = "res/")
+      : name{n}, path{p}, axis{a}, data(this->size()) {}
+  Image(const std::string n, std::vector<cl_double> d,
+        std::pair<cl_long, cl_long> a, const std::string p = "res/")
       : name{n}, path{p}, axis{a}, data{d} {}
 
   Image(const Image& other)
-      : name{other.name}, path{other.path}, axis{other.axis} {
-    delete data;
-    data = new cl_double[this->size()];
-    for(size_t i = 0; i < this->size(); i++) {
-      data[i] = other.data[i];
-    }
-  }
+      : name{other.name},
+        path{other.path},
+        axis{other.axis},
+        data{other.data} {}
   Image(Image&& other)
       : name{other.name},
         path{other.path},
         axis{other.axis},
-        data{std::exchange(other.data, nullptr)} {}
+        data{std::move(other.data)} {}
 
   Image& operator=(const Image& other) { return *this = Image{other}; }
 
@@ -44,7 +39,7 @@ struct Image {
     name = other.name;
     path = other.path;
     axis = other.axis;
-    data = std::exchange(other.data, nullptr);
+    data = std::move(other.data);
     return *this;
   }
 
@@ -92,9 +87,7 @@ inline cl_int readImage(Image& input) {
 
   std::valarray<cl_double> temp(0.0, input.size());
   img.read(temp);
-  for(size_t i = 0; i < input.size(); i++) {
-    input.data[i] = temp[i];
-  }
+  input.data = std::vector<cl_double>{std::begin(temp), std::end(temp)};
 
   if(args.verbose) {
     std::cout << img << std::endl;
@@ -119,7 +112,7 @@ inline cl_int writeImage(Image& img) {
 
   cl_long fpixel(1);
 
-  valarray<cl_double> data{img.data, img.size()};
+  valarray<cl_double> data{&img.data[0], img.data.size()};
 
   pFits->pHDU().write(fpixel, data.size(), data);
 

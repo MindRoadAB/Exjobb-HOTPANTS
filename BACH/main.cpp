@@ -36,33 +36,35 @@ int main(int argc, char* argv[]) {
 
   auto [w, h] = templateImg.axis;
   if(w != scienceImg.axis.first || h != scienceImg.axis.second) {
-    std::cout << "Template image and science image must be the same size!" << std::endl;
+    std::cout << "Template image and science image must be the same size!"
+              << std::endl;
+
     exit(1);
   }
 
   /* ===== SSS ===== */
 
-  std::vector<Stamp> templStamps = createStamps(templateImg, w, h);
-  if(args.verbose) 
+  std::vector<Stamp> templStamps(args.stampsx * args.stampsy, Stamp{});
+  createStamps(templateImg, templStamps, w, h);
+  if(args.verbose)
     std::cout << "Stamps created for template image" << std::endl;
 
-  std::vector<Stamp> sciStamps = createStamps(scienceImg, w, h);
-  if(args.verbose)
-    std::cout << "Stamps created for science image" << std::endl;
+  std::vector<Stamp> sciStamps(args.stampsx * args.stampsy, Stamp{});
+  createStamps(scienceImg, sciStamps, w, h);
+  if(args.verbose) std::cout << "Stamps created for science image" << std::endl;
 
   identifySStamps(templStamps);
   if(args.verbose)
     std::cout << "Substamps found in template image" << std::endl;
-  
+
   identifySStamps(sciStamps);
-  if(args.verbose)
-    std::cout << "Substamps found in science image" << std::endl;
+  if(args.verbose) std::cout << "Substamps found in science image" << std::endl;
 
   /* ===== Conv ===== */
 
-  cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
+  cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   // box 5x5
   cl_long kernWidth = 5;
@@ -70,7 +72,7 @@ int main(int argc, char* argv[]) {
   cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
                           a, a, a, a, a, a, a, a, a, a, a, a};
 
-  cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
+  cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * kernWidth * kernWidth);
 
   cl::CommandQueue queue(context, default_device);
@@ -78,8 +80,9 @@ int main(int argc, char* argv[]) {
   err = queue.enqueueWriteBuffer(
       kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
   checkError(err);
+
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 templateImg.data);
+                                 &templateImg.data[0]);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -91,7 +94,7 @@ int main(int argc, char* argv[]) {
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, outImg.data);
+                                sizeof(cl_double) * w * h, &outImg.data[0]);
   checkError(err);
 
   err = writeImage(outImg);
@@ -102,7 +105,7 @@ int main(int argc, char* argv[]) {
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, diffImg.data);
+                                sizeof(cl_double) * w * h, &diffImg.data[0]);
   checkError(err);
 
   err = writeImage(diffImg);
