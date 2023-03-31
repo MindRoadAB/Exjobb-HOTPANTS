@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
   auto [w, h] = templateImg.axis;
-  if (w != scienceImg.axis.first || h != scienceImg.axis.second) {
+  if(w != scienceImg.axis.first || h != scienceImg.axis.second) {
     std::cout << "Template image and science image must be the same size!" << std::endl;
     exit(1);
   }
@@ -43,14 +43,20 @@ int main(int argc, char* argv[]) {
   /* ===== SSS ===== */
 
   std::vector<Stamp> templStamps = createStamps(templateImg, w, h);
-  if (args.verbose) {
+  if(args.verbose) 
     std::cout << "Stamps created for template image" << std::endl;
-  }
 
   std::vector<Stamp> sciStamps = createStamps(scienceImg, w, h);
-  if (args.verbose) {
+  if(args.verbose)
     std::cout << "Stamps created for science image" << std::endl;
-  }
+
+  identifySStamps(templStamps);
+  if(args.verbose)
+    std::cout << "Substamps found in template image" << std::endl;
+  
+  identifySStamps(sciStamps);
+  if(args.verbose)
+    std::cout << "Substamps found in science image" << std::endl;
 
   /* ===== Conv ===== */
 

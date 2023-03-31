@@ -6,9 +6,11 @@
 #include <utility>
 
 #include "fitsUtil.h"
+#include "argsUtil.h"
 
 struct SubStamp {
   std::pair<cl_long, cl_long> subStampCoords{};
+  cl_double val;
 };
 
 struct Stamp {
@@ -101,6 +103,25 @@ std::vector<Stamp>& createStamps(Image& img, int w, int h) {
     }
   } 
   return stamps;
+}
+
+void findSStamps(Stamp& stamp) {
+  for(int x = 0; x < stamp.stampSize.first; x++) {
+    for(int y = 0; y < stamp.stampSize.second; y++) {
+
+    }
+  }
+}
+
+bool notWithinThresh(SubStamp ss) {
+  return (ss.val < args.threshLow || ss.val > args.threshHigh); 
+}
+
+void identifySStamps(std::vector<Stamp>& stamps) {
+  for(auto s : stamps) {
+    findSStamps(s);
+    std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh);
+  }
 }
 
 #endif
