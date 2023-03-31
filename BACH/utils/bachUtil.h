@@ -10,43 +10,37 @@ struct SubStamp {
 };
 
 struct Stamp {
-  cl_double* stampData{};
   std::pair<cl_long, cl_long> stampCoords{};
   std::pair<cl_long, cl_long> stampSize{};
   std::vector<SubStamp> subStamps{};
+  std::vector<cl_double> stampData{};
 
-  ~Stamp() { delete stampData; }
-  Stamp(cl_double* stampData, std::pair<cl_long, cl_long> stampCoords,
+  Stamp(std::pair<cl_long, cl_long> stampCoords,
         std::pair<cl_long, cl_long> stampSize,
-        const std::vector<SubStamp>& subStamps)
-      : stampCoords{stampCoords}, stampSize{stampSize}, subStamps{subStamps} {
-    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
-      this->stampData[i] = stampData[i];
-    }
-  }
+        const std::vector<SubStamp>& subStamps,
+        const std::vector<cl_double>& stampData)
+      : stampCoords{stampCoords},
+        stampSize{stampSize},
+        subStamps{subStamps},
+        stampData{stampData} {}
 
   Stamp(const Stamp& other)
       : stampCoords{other.stampCoords},
         stampSize{other.stampSize},
-        subStamps{other.subStamps} {
-    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
-      this->stampData[i] = other.stampData[i];
-    }
-  }
+        subStamps{other.subStamps},
+        stampData{other.stampData} {}
 
   Stamp(Stamp&& other)
-      : stampData{std::exchange(other.stampData, nullptr)},
-        stampCoords{other.stampCoords},
+      : stampCoords{other.stampCoords},
         stampSize{other.stampSize},
-        subStamps{std::move(other.subStamps)} {}
+        subStamps{std::move(other.subStamps)},
+        stampData{std::move(other.stampData)} {}
 
   Stamp& operator=(const Stamp& other) {
     this->stampCoords = other.stampCoords;
     this->stampSize = other.stampSize;
     this->subStamps = other.subStamps;
-    for(cl_long i = 0; i < stampSize.first * stampSize.second; i++) {
-      this->stampData[i] = other.stampData[i];
-    }
+    this->stampData = other.stampData;
     return *this;
   }
 
@@ -54,7 +48,7 @@ struct Stamp {
     this->stampCoords = other.stampCoords;
     this->stampSize = other.stampSize;
     this->subStamps = std::move(other.subStamps);
-    this->stampData = std::exchange(other.stampData, nullptr);
+    this->stampData = std::move(other.stampData);
     return *this;
   }
 };

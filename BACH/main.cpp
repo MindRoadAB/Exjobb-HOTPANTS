@@ -34,9 +34,9 @@ int main(int argc, char* argv[]) {
 
   auto [w, h] = templateImg.axis;
 
-  cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
+  cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   // box 5x5
   cl_long kernWidth = 5;
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
                           a, a, a, a, a, a, a, a, a, a, a, a};
 
-  cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
+  cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * kernWidth * kernWidth);
 
   cl::CommandQueue queue(context, default_device);
@@ -52,8 +52,9 @@ int main(int argc, char* argv[]) {
   err = queue.enqueueWriteBuffer(
       kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
   checkError(err);
+
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 templateImg.data);
+                                 &templateImg.data[0]);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, outImg.data);
+                                sizeof(cl_double) * w * h, &outImg.data[0]);
   checkError(err);
 
   err = writeImage(outImg);
@@ -76,7 +77,7 @@ int main(int argc, char* argv[]) {
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, diffImg.data);
+                                sizeof(cl_double) * w * h, &diffImg.data[0]);
   checkError(err);
 
   err = writeImage(diffImg);
