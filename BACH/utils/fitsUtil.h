@@ -48,16 +48,6 @@ struct Image {
     return *this;
   }
 
-  void updateImage(std::pair<cl_long, cl_long> a, cl_double* d = nullptr) {
-    axis = a;
-    delete data;
-    if(d != nullptr) {
-      data = d;
-    } else {
-      data = new cl_double[this->size()];
-    }
-  }
-
   std::string getFile() { return path + name; }
 
   std::string getFileName() {
@@ -98,7 +88,7 @@ inline cl_int readImage(Image& input) {
 
   img.readAllKeys();
 
-  input.updateImage(std::make_pair(img.axis(0), img.axis(1)));
+  input = Image{input.name, std::make_pair(img.axis(0), img.axis(1))};
 
   std::valarray<cl_double> temp(0.0, input.size());
   img.read(temp);
