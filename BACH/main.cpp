@@ -38,21 +38,27 @@ int main(int argc, char* argv[]) {
   if(w != scienceImg.axis.first || h != scienceImg.axis.second) {
     std::cout << "Template image and science image must be the same size!"
               << std::endl;
+
     exit(1);
   }
 
   /* ===== SSS ===== */
+
   std::vector<Stamp> templStamps(args.stampsx * args.stampsy, Stamp{});
   createStamps(templateImg, templStamps, w, h);
-  if(args.verbose) {
+  if(args.verbose)
     std::cout << "Stamps created for template image" << std::endl;
-  }
 
   std::vector<Stamp> sciStamps(args.stampsx * args.stampsy, Stamp{});
   createStamps(scienceImg, sciStamps, w, h);
-  if(args.verbose) {
-    std::cout << "Stamps created for science image" << std::endl;
-  }
+  if(args.verbose) std::cout << "Stamps created for science image" << std::endl;
+
+  identifySStamps(templStamps);
+  if(args.verbose)
+    std::cout << "Substamps found in template image" << std::endl;
+
+  identifySStamps(sciStamps);
+  if(args.verbose) std::cout << "Substamps found in science image" << std::endl;
 
   /* ===== Conv ===== */
 

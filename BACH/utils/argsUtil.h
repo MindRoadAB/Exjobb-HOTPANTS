@@ -1,6 +1,7 @@
 #ifndef ARG_UTIL
 #define ARG_UTIL
 
+#include <CL/opencl.hpp>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -17,6 +18,9 @@ struct Arguments {
 
   int stampsx = 10;
   int stampsy = 10;
+
+  cl_double threshLow = 0;
+  cl_double threshHigh = 0;
 
   bool verbose = false;
 };
