@@ -15,6 +15,9 @@ struct Arguments {
   std::string inputPath = "res/";
   std::string outPath = "out/";
 
+  int stampsx = 10;
+  int stampsy = 10;
+
   bool verbose = false;
 };
 

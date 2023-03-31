@@ -25,6 +25,8 @@ int main(int argc, char* argv[]) {
 
   err = readImage(templateImg);
   checkError(err);
+  err = readImage(scienceImg);
+  checkError(err);
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -33,6 +35,24 @@ int main(int argc, char* argv[]) {
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
   auto [w, h] = templateImg.axis;
+  if (w != scienceImg.axis.first || h != scienceImg.axis.second) {
+    std::cout << "Template image and science image must be the same size!" << std::endl;
+    exit(1);
+  }
+
+  /* ===== SSS ===== */
+
+  std::vector<Stamp> templStamps = createStamps(templateImg, w, h);
+  if (args.verbose) {
+    std::cout << "Stamps created for template image" << std::endl;
+  }
+
+  std::vector<Stamp> sciStamps = createStamps(scienceImg, w, h);
+  if (args.verbose) {
+    std::cout << "Stamps created for science image" << std::endl;
+  }
+
+  /* ===== Conv ===== */
 
   cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
