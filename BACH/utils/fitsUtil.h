@@ -14,24 +14,28 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
   std::vector<cl_double> data{};
+  std::vector<bool> mask{};
 
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
         const std::string p = "res/")
-      : name{n}, path{p}, axis{a}, data(this->size()) {}
+      : name{n}, path{p}, axis{a}, data(this->size()), mask(this->size()) {}
   Image(const std::string n, std::vector<cl_double> d,
-        std::pair<cl_long, cl_long> a, const std::string p = "res/")
-      : name{n}, path{p}, axis{a}, data{d} {}
+        std::pair<cl_long, cl_long> a, std::vector<bool> m,
+        const std::string p = "res/")
+      : name{n}, path{p}, axis{a}, data{d}, mask{m} {}
 
   Image(const Image& other)
       : name{other.name},
         path{other.path},
         axis{other.axis},
-        data{other.data} {}
+        data{other.data},
+        mask{other.mask} {}
   Image(Image&& other)
       : name{other.name},
         path{other.path},
         axis{other.axis},
-        data{std::move(other.data)} {}
+        data{std::move(other.data)},
+        mask{std::move(other.maks)} {}
 
   Image& operator=(const Image& other) { return *this = Image{other}; }
 
@@ -40,6 +44,7 @@ struct Image {
     path = other.path;
     axis = other.axis;
     data = std::move(other.data);
+    mask = std::move(other.mask);
     return *this;
   }
 
@@ -60,6 +65,22 @@ struct Image {
     tmpAx[1] = axis.second;
     long* ptr = tmpAx;
     return ptr;
+  }
+
+  bool masked(int x, int y) { return mask[x + (y * axis.first)]; }
+
+  void maskPix(int x, int y) { mask[x + (y * axis.first)] = true; }
+
+  void maskSStamp(SubStamp& sstamp) {
+    for(int x = sstamp.subStampCoords.first - args.hSStampWidth;
+        x <= sstamp.subStampCoords.first + args.hSStampWidth; x++) {
+      if(x < 0 || x > axis.first) continue;
+      for(int y = sstamp.subStampCoords.second - args.hSStampWidth;
+          y <= sstamp.subStampCoords.second + args.hSStampWidth; y++) {
+        if(y < 0 || y > axis.second) continue;
+        this->maskPix(x, y);
+      }
+    }
   }
 };
 

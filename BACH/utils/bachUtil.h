@@ -5,12 +5,15 @@
 #include <iostream>
 #include <utility>
 
-#include "fitsUtil.h"
 #include "argsUtil.h"
+#include "fitsUtil.h"
 
 struct SubStamp {
   std::pair<cl_long, cl_long> subStampCoords{};
   cl_double val;
+
+  bool operator<(const SubStamp& other) { return val < other.val; }
+  bool operator>(const SubStamp& other) { return val > other.val; }
 };
 
 struct Stamp {
@@ -96,22 +99,85 @@ inline void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
   }
 }
 
-void findSStamps(Stamp& stamp) {
-  for(int x = 0; x < stamp.stampSize.first; x++) {
-    for(int y = 0; y < stamp.stampSize.second; y++) {
+bool inImage(Image& image, int x, int y) {
+  return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
+}
 
+void checkSStamp(SubStamp& sstamp) {}
+
+void findSStamps(Stamp& stamp, Image& image) {
+  int foundSStamps = 0;
+  cl_double floor, _tmp_;
+  while(foundSStamps < args.maxSStamps) {
+    int absx, absy, coords;
+    _tmp_ = max(floor, sky + (args.threshHigh - sky) * ?);
+    for(int x = 0; x < stamp.stampSize.first; x++) {
+      absx = x + stamp.stampCoords.first;
+      for(int y = 0; y < stamp.stampSize.second; y++) {
+        absy = y + stamp.stampCoords.second;
+        coords = x + (y * stamp.stampSize.second);
+        if(image.masked(absx, absy) ||
+           stamp.stampData[coords] > args.threshHigh ||
+           stamp.stampData[coords] < args.threshLow) {  // TODO: add sky
+          continue;
+        }
+
+        if(stamp.stampData[coords] > _tmp_) {  // good candidate found
+          SubStamp s{std::make_pair(absx, absy), stamp.stampData[coords]};
+          int kCoords;
+          for(kx = absx - args.hSStampWidth; kx <= absx + args.hSStampWidth;
+              kx++) {
+            if(kx < 0 || kx > image.axis.first) continue;
+            for(ky = absy - args.hSStampWidth; ky <= absy + args.hSStampWidth;
+                ky++) {
+              kCoords = kx + (ky * image.axis.first);
+              if(ky < 0 || ky > image.axis.second || image.masked(kx, ky) ||
+                 image[kCoords] < args.threshLow)  // TODO: add sky
+                continue;
+
+              if(image[kCoords] > args.threshHigh) {
+                image.maskPix(kx, ky);
+                continue;
+              }
+
+              if(image[kCoords] > s.val) {
+                s.val = image[kCoords];
+                s.subStampCoords = std::make_pair(kx, ky);
+              }
+            }
+          }
+          checkSStamp();
+          stamp.subStamps.push_back(s);
+          foundSStamps++;
+          image.maskSStamp(s);
+          if(args.verbose) std::cout << "Substamp added" << std::endl;
+        }
+        if(foundSStamps >= args.maxSStamps) break;
+      }
+      if(foundSStamps >= args.maxSStamps) break;
     }
+    if() break;
   }
+
+  if(foundSStamps == 0) {
+    if(args.verbose)
+      std::cout << "No suitable substamps found in stamp." << std::endl;
+    return 1;
+  }
+  std::sort(stamp.subStamps.begin(), stamp.subStamps.end(),
+            std::greater<SubStamp>());
 }
 
 bool notWithinThresh(SubStamp ss) {
-  return (ss.val < args.threshLow || ss.val > args.threshHigh); 
+  return (ss.val < args.threshLow || ss.val > args.threshHigh);
 }
 
-void identifySStamps(std::vector<Stamp>& stamps) {
+void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   for(auto s : stamps) {
-    findSStamps(s);
-    std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh);
+    findSStamps(s, image);
+    s.subStamps.erase(
+        std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
+        s.subStamps.end());
   }
 }
 

@@ -22,6 +22,9 @@ struct Arguments {
   cl_double threshLow = 0;
   cl_double threshHigh = 0;
 
+  cl_int maxSStamps = 6;
+  cl_int hSStampWidth = 15;  // half substamp width
+
   bool verbose = false;
 };
 
