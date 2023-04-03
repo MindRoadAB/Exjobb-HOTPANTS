@@ -53,11 +53,11 @@ int main(int argc, char* argv[]) {
   createStamps(scienceImg, sciStamps, w, h);
   if(args.verbose) std::cout << "Stamps created for science image" << std::endl;
 
-  identifySStamps(templStamps);
+  identifySStamps(templStamps, templateImg);
   if(args.verbose)
     std::cout << "Substamps found in template image" << std::endl;
 
-  identifySStamps(sciStamps);
+  identifySStamps(sciStamps, scienceImg);
   if(args.verbose) std::cout << "Substamps found in science image" << std::endl;
 
   /* ===== Conv ===== */
