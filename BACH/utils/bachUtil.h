@@ -125,7 +125,7 @@ inline bool notWithinThresh(SubStamp ss) {
 }
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
-  for(auto s : stamps) {
+  for(auto& s : stamps) {
     findSStamps(s, image);
     s.subStamps.erase(
         std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),

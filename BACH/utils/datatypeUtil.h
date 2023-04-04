@@ -71,7 +71,12 @@ struct Image {
 
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
         const std::string p = "res/")
-    : name{n}, path{p}, axis{a}, data(this->size()), mask(this->size(), false) {}
+      : name{n},
+        path{p},
+        axis{a},
+        data(this->size()),
+        mask(this->size(), false) {}
+
   Image(const std::string n, std::vector<cl_double> d,
         std::pair<cl_long, cl_long> a, std::vector<bool> m,
         const std::string p = "res/")
@@ -83,6 +88,7 @@ struct Image {
         axis{other.axis},
         data{other.data},
         mask{other.mask} {}
+
   Image(Image&& other)
       : name{other.name},
         path{other.path},
