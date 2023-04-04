@@ -15,11 +15,17 @@ struct SubStamp {
   bool operator>(const SubStamp& other) const { return val > other.val; }
 };
 
+struct StampStats {
+  cl_double skyEst{};            // Mode of stamp
+  cl_double fullWidthHalfMax{};  // Middle part value diff
+};
+
 struct Stamp {
   std::pair<cl_long, cl_long> stampCoords{};
   std::pair<cl_long, cl_long> stampSize{};
   std::vector<SubStamp> subStamps{};
   std::vector<cl_double> stampData{};
+  StampStats stampStats{};
 
   Stamp(){};
   Stamp(std::pair<cl_long, cl_long> stampCoords,

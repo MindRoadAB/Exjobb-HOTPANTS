@@ -4,6 +4,7 @@
 #include <CL/opencl.hpp>
 #include <algorithm>
 #include <iostream>
+#include <random>
 #include <utility>
 
 #include "argsUtil.h"
@@ -130,6 +131,25 @@ inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
     s.subStamps.erase(
         std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
         s.subStamps.end());
+  }
+}
+
+inline void calcStats(Stamp& stamp, Image& image) {
+  std::vector<cl_double> values{};
+  std::vector<cl_int> bins{};
+
+  cl_int nValues = 100;
+  cl_double upProc = 0.9;
+  cl_double midProc = 0.5;
+  cl_int numPix = stamp.stampSize.first * stamp.stampSize.second;
+
+  if(numPix < nValues) {
+    std::cout << "Not enough pixels in a stamp" << std::endl;
+    exit(1);
+  }
+
+  for(int i = 0; i < nValues; i++) {
+    std::uniform_int_distribution<cl_int> randGen(0, numPix);
   }
 }
 
