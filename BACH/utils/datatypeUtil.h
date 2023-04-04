@@ -1,11 +1,13 @@
 #ifndef DATATYPE_UTIL
 #define DATATYPE_UTIL
 
-#include <string>
 #include <CL/opencl.h>
+
+#include <string>
 #include <vector>
 
 #include "argsUtil.h"
+
 
 struct SubStamp {
   std::pair<cl_long, cl_long> subStampCoords{};

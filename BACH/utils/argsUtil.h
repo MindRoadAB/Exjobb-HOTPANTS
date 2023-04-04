@@ -21,6 +21,10 @@ struct Arguments {
 
   cl_double threshLow = 0.0;
   cl_double threshHigh = 25000.0;
+  cl_double threshKernFit = 20.0;
+
+  cl_double sigClipAlpha = 3.0;
+  cl_double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
   cl_int hSStampWidth = 15;  // half substamp width
