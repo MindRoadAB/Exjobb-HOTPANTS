@@ -54,9 +54,12 @@ inline bool inImage(Image& image, int x, int y) {
   return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
 }
 
-inline void checkSStamp(SubStamp& sstamp) {}
+inline void checkSStamp(SubStamp& sstamp) {
+  std::cout << "checking sub-stamp..." << std::endl;
+}
 
 inline cl_int findSStamps(Stamp& stamp, Image& image) {
+  std::cout << "Looking for sub-stamps in stamp..." << std::endl;
   int foundSStamps = 0;
   cl_double floor = stamp.stampStats.skyEst +
                     args.threshKernFit * stamp.stampStats.fullWidthHalfMax;
@@ -80,23 +83,34 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
           continue;
         }
 
+        if(args.verbose) {
+          std::cout << "_tmp_ is: " << _tmp_ << std::endl;
+          std::cout << "stamp.stampData is: " << stamp.stampData[coords]
+                    << std::endl;
+        }
         if(stamp.stampData[coords] > _tmp_) {  // good candidate found
           SubStamp s{std::make_pair(absx, absy), stamp.stampData[coords]};
           int kCoords;
           for(int kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
               kx++) {
-            if(kx < 0 || kx >= image.axis.first) continue;
+            if(kx < 0 || kx >= image.axis.first) {
+              std::cout << "continue 1..." << std::endl;
+              continue;
+            }
             for(int ky = absy - args.hSStampWidth;
                 ky < absy + args.hSStampWidth; ky++) {
               kCoords = kx + (ky * image.axis.first);
               if(ky < 0 || ky >= image.axis.second || image.masked(kx, ky) ||
                  (stamp.stampData[coords] - stamp.stampStats.skyEst) *
                          (1.0 / stamp.stampStats.fullWidthHalfMax) <
-                     args.threshKernFit)
+                     args.threshKernFit) {
+                std::cout << "continue 2..." << std::endl;
                 continue;
+              }
 
               if(image.data[kCoords] > args.threshHigh) {
                 image.maskPix(kx, ky);
+                std::cout << "continue 3..." << std::endl;
                 continue;
               }
 
@@ -106,6 +120,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
               }
             }
           }
+
           checkSStamp(s);
           stamp.subStamps.push_back(s);
           foundSStamps++;
@@ -132,15 +147,6 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
 
 inline bool notWithinThresh(SubStamp ss) {
   return (ss.val < args.threshLow || ss.val > args.threshHigh);
-}
-
-inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
-  for(auto& s : stamps) {
-    findSStamps(s, image);
-    s.subStamps.erase(
-        std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
-        s.subStamps.end());
-  }
 }
 
 inline void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
@@ -217,12 +223,12 @@ inline void calcStats(Stamp& stamp, Image& image) {
     exit(1);
   }
 
-  std::mt19937 gen(std::random_device());
+  std::random_device rd;
+  std::mt19937 gen(rd());
   std::uniform_int_distribution<cl_int> randGenX(0, stamp.stampSize.first - 1);
   std::uniform_int_distribution<cl_int> randGenY(0, stamp.stampSize.second - 1);
 
   // Stop after randomly having selected a pixel numPix times.
-  int pixN;
   for(int i = 0; (i < numPix) && (values.size() < nValues); i++) {
     int randX = randGenX(gen);
     int randY = randGenY(gen);
@@ -263,7 +269,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
       cl_int indexI = (x + stamp.stampCoords.first) +
                       (y + stamp.stampCoords.second) * stamp.stampSize.first;
 
-      if(image.mask[indexI] || stamp[indexS] < 0) {
+      if(!image.mask[indexI] && stamp[indexS] >= 0) {
         maskedStamp.push_back(stamp[indexS]);
       }
     }
@@ -273,6 +279,10 @@ inline void calcStats(Stamp& stamp, Image& image) {
   cl_double mean, stdDev, invStdDev;
   sigmaClip(maskedStamp, mean, stdDev);
   invStdDev = 1.0 / stdDev;
+
+  if(args.verbose) {
+    std::cout << "Mean: " << mean << " stdDev: " << stdDev << std::endl;
+  }
 
   int attempts = 0;
   cl_int okCount = 0;
@@ -285,7 +295,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
       exit(1);
     }
 
-    std::fill(bins.begin(), bins.end(), 0.0);
+    std::fill(bins.begin(), bins.end(), 0);
     okCount = 0;
     sum = 0.0;
     sumBins = 0.0;
@@ -356,10 +366,20 @@ inline void calcStats(Stamp& stamp, Image& image) {
     upper = i - (sumBins - upper) / bins[i - 1];
 
     if(lower < 1.0 || upper > 255.0) {
+      if(args.verbose) {
+        std::cout << "lower is: " << lower << ", upper is: " << upper
+                  << std::endl;
+        std::cout << "Expanding bin size..." << std::endl;
+      }
       lowerBinVal -= 128.0 * binSize;
       binSize *= 2;
       attempts++;
     } else if(upper - lower < 40.0) {
+      if(args.verbose) {
+        std::cout << "lower is: " << lower << ", upper is: " << upper
+                  << std::endl;
+        std::cout << "Shrinking bin size..." << std::endl;
+      }
       binSize /= 3.0;
       lowerBinVal = stamp.stampStats.skyEst - 128.0 * binSize;
       attempts++;
@@ -373,6 +393,17 @@ inline void calcStats(Stamp& stamp, Image& image) {
   median = i - (sumBins - okCount / 2.0) / bins[i - 1];
   lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
+}
+
+inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
+  std::cout << "Identifying for sub-stamps..." << std::endl;
+  for(auto& s : stamps) {
+    calcStats(s, image);
+    findSStamps(s, image);
+    s.subStamps.erase(
+        std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
+        s.subStamps.end());
+  }
 }
 
 #endif
