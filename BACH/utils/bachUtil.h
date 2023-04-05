@@ -64,11 +64,12 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
   cl_double floor = stamp.stampStats.skyEst +
                     args.threshKernFit * stamp.stampStats.fullWidthHalfMax;
   cl_double _tmp_;
+  cl_double dfrac = 0.9;
   while(foundSStamps < args.maxSStamps) {
     int absx, absy, coords;
     _tmp_ = std::max(floor, stamp.stampStats.skyEst +
                                 (args.threshHigh - stamp.stampStats.skyEst) *
-                                    0.9);  // TODO: why is dfrac == 0.9?
+                                    dfrac);  // TODO: why is dfrac == 0.9?
     for(int x = 0; x < stamp.stampSize.first; x++) {
       absx = x + stamp.stampCoords.first;
       for(int y = 0; y < stamp.stampSize.second; y++) {
@@ -83,34 +84,31 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
           continue;
         }
 
-        if(args.verbose) {
-          std::cout << "_tmp_ is: " << _tmp_ << std::endl;
-          std::cout << "stamp.stampData is: " << stamp.stampData[coords]
-                    << std::endl;
-        }
         if(stamp.stampData[coords] > _tmp_) {  // good candidate found
           SubStamp s{std::make_pair(absx, absy), stamp.stampData[coords]};
           int kCoords;
           for(int kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
               kx++) {
             if(kx < 0 || kx >= image.axis.first) {
-              std::cout << "continue 1..." << std::endl;
+              /* std::cout << "continue 1..." << std::endl; */
               continue;
             }
             for(int ky = absy - args.hSStampWidth;
                 ky < absy + args.hSStampWidth; ky++) {
               kCoords = kx + (ky * image.axis.first);
+              bool inKernFit =
+                  (stamp.stampData[coords] - stamp.stampStats.skyEst) *
+                      (1.0 / stamp.stampStats.fullWidthHalfMax) <
+                  args.threshKernFit;
               if(ky < 0 || ky >= image.axis.second || image.masked(kx, ky) ||
-                 (stamp.stampData[coords] - stamp.stampStats.skyEst) *
-                         (1.0 / stamp.stampStats.fullWidthHalfMax) <
-                     args.threshKernFit) {
-                std::cout << "continue 2..." << std::endl;
+                 inKernFit) {
+                /* std::cout << "continue 2..." << std::endl; */
                 continue;
               }
 
               if(image.data[kCoords] > args.threshHigh) {
                 image.maskPix(kx, ky);
-                std::cout << "continue 3..." << std::endl;
+                /* std::cout << "continue 3..." << std::endl; */
                 continue;
               }
 
@@ -132,7 +130,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
       if(foundSStamps >= args.maxSStamps) break;
     }
     // Compare _tmp_ against a floor value;
-    if(false) break;
+    if(_tmp_ == floor) break;
+    dfrac -= 0.2;
   }
 
   if(foundSStamps == 0) {
@@ -397,7 +396,6 @@ inline void calcStats(Stamp& stamp, Image& image) {
   median = i - (sumBins - okCount / 2.0) / bins[i - 1];
   lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
-  exit(1);
 }
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
