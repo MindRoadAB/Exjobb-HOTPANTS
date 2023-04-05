@@ -20,32 +20,36 @@ inline void checkError(cl_int err) {
 }
 
 inline void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
-  for(int i = 0; i < args.stampsx; i++) {
-    for(int j = 0; j < args.stampsy; j++) {
+  for(int j = 0; j < args.stampsy; j++) {
+    for(int i = 0; i < args.stampsx; i++) {
       int stampw = w / args.stampsx;
       int stamph = h / args.stampsy;
       int startx = i * stampw;
       int starty = j * stamph;
       int stopx = startx + stampw;
       int stopy = starty + stamph;
+
       if(i == args.stampsx - 1) {
         stopx = w;
         stampw = stopx - startx;
       }
+
       if(j == args.stampsy - 1) {
         stopy = h;
         stamph = stopy - starty;
       }
 
-      for(int x = 0; x < stampw; x++) {
-        for(int y = 0; y < stamph; y++) {
+      Stamp tmpS{};
+      for(int y = 0; y < stamph; y++) {
+        for(int x = 0; x < stampw; x++) {
           cl_double tmp = img.data[(startx + x) + ((starty + y) * w)];
-          stamps[i + j * args.stampsx].data.push_back(tmp);
+          tmpS.data.push_back(tmp);
         }
       }
 
-      stamps[i + j * args.stampsx].coords = {startx, starty};
-      stamps[i + j * args.stampsx].size = {stampw, stamph};
+      tmpS.coords = std::make_pair(startx, starty);
+      tmpS.size = std::make_pair(stampw, stamph);
+      stamps.push_back(tmpS);
     }
   }
 }
@@ -73,15 +77,15 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
         absCoords = absx + absy * image.axis.first;
         coords = x + (y * stamp.size.second);
 
-        if(image.masked(absx, absy) || image[absCoords] > args.threshHigh ||
-           (image[absCoords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
+        if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
+           (stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
                args.threshKernFit) {
           continue;
         }
 
-        if(image[absCoords] > _tmp_) {  // good candidate found
+        if(stamp[coords] > _tmp_) {  // good candidate found
           SubStamp s{std::make_pair(absx, absy), std::make_pair(x, y),
-                     image[absCoords]};
+                     stamp[coords]};
           int kCoords;
           for(int kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
               kx++) {

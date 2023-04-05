@@ -49,13 +49,13 @@ int main(int argc, char* argv[]) {
 
   /* ===== SSS ===== */
 
-  std::vector<Stamp> templateStamps(args.stampsx * args.stampsy, Stamp{});
+  std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
   if(args.verbose)
     std::cout << "Stamps created for " << templateImg.name << std::endl
               << std::endl;
 
-  std::vector<Stamp> sciStamps(args.stampsx * args.stampsy, Stamp{});
+  std::vector<Stamp> sciStamps{};
   createStamps(scienceImg, sciStamps, w, h);
   if(args.verbose)
     std::cout << "Stamps created for " << scienceImg.name << std::endl
