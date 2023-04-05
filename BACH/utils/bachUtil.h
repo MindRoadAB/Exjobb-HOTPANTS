@@ -60,27 +60,28 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
   int foundSStamps = 0;
   cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
   cl_double _tmp_;
+  // TODO: why is dfrac == 0.9?
   cl_double dfrac = 0.9;
   while(foundSStamps < args.maxSStamps) {
-    int absx, absy, coords;
-    _tmp_ = std::max(
-        floor, stamp.stats.skyEst + (args.threshHigh - stamp.stats.skyEst) *
-                                        dfrac);  // TODO: why is dfrac == 0.9?
+    int absx, absy, coords, absCoords;
+    _tmp_ = std::max(floor, stamp.stats.skyEst +
+                                (args.threshHigh - stamp.stats.skyEst) * dfrac);
     for(int x = 0; x < stamp.size.first; x++) {
       absx = x + stamp.coords.first;
       for(int y = 0; y < stamp.size.second; y++) {
         absy = y + stamp.coords.second;
+        absCoords = absx + absy * image.axis.first;
         coords = x + (y * stamp.size.second);
 
-        if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
-           (stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
+        if(image.masked(absx, absy) || image[absCoords] > args.threshHigh ||
+           (image[absCoords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
                args.threshKernFit) {
           continue;
         }
 
-        if(stamp.data[coords] > _tmp_) {  // good candidate found
+        if(image[absCoords] > _tmp_) {  // good candidate found
           SubStamp s{std::make_pair(absx, absy), std::make_pair(x, y),
-                     stamp[coords]};
+                     image[absCoords]};
           int kCoords;
           for(int kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
               kx++) {
