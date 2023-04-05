@@ -211,7 +211,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
   cl_double median, lfwhm, sum;  // temp for now
 
   std::vector<cl_double> values{};
-  std::vector<cl_int> bins{256, 0};
+  std::vector<cl_int> bins(256, 0);
 
   cl_int nValues = 100;
   cl_double upProc = 0.9;
@@ -247,12 +247,13 @@ inline void calcStats(Stamp& stamp, Image& image) {
     values.push_back(stamp[indexS]);
   }
 
-  std::sort(begin(values), end(values), std::greater<cl_double>());
+  std::sort(begin(values), end(values));
 
   // Width of a histogram bin.
   cl_double binSize = (values[(int)(upProc * values.size())] -
                        values[(int)(midProc * values.size())]) /
                       (cl_double)nValues;
+  std::cout << "binSize: " << binSize << std::endl;
 
   // Value of lowest bin.
   cl_double lowerBinVal =
@@ -300,7 +301,6 @@ inline void calcStats(Stamp& stamp, Image& image) {
     sum = 0.0;
     sumBins = 0.0;
     sumExpect = 0.0;
-
     for(int x = 0; x < stamp.stampSize.first; x++) {
       for(int y = 0; y < stamp.stampSize.second; y++) {
         // Pixel in stamp in stamp coords.
@@ -347,12 +347,14 @@ inline void calcStats(Stamp& stamp, Image& image) {
     if(maxIndex < 0 || maxIndex > 255) maxIndex = 0;
 
     sumBins = 0.0;
-    for(int i = maxIndex; sumBins < okCount / 10.0 && upperIndex < 255; i++) {
+    for(int i = maxIndex; sumBins < okCount / 10.0 && i < 255; i++) {
       sumBins += bins[i];
       sumExpect += i * bins[i];
     }
     cl_double modeBin = sumExpect / sumBins + 0.5;
     stamp.stampStats.skyEst = lowerBinVal + binSize * (modeBin - 1.0);
+    if(args.verbose)
+      std::cout << "Mode: " << stamp.stampStats.skyEst << std::endl;
 
     lower = okCount * 0.25;
     upper = okCount * 0.75;
@@ -387,12 +389,15 @@ inline void calcStats(Stamp& stamp, Image& image) {
       break;
   }
   stamp.stampStats.fullWidthHalfMax = binSize * (upper - lower) / args.iqRange;
+  if(args.verbose)
+    std::cout << "fwhm: " << stamp.stampStats.fullWidthHalfMax << std::endl;
   int i = 0;
   for(i = 0, sumBins = 0; sumBins < okCount / 2.0; sumBins += bins[i++])
     ;
   median = i - (sumBins - okCount / 2.0) / bins[i - 1];
   lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
+  exit(1);
 }
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
