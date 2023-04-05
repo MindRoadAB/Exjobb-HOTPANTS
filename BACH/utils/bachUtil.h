@@ -90,15 +90,15 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
               if(ky < 0 || ky >= image.axis.second) continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image.masked(kx, ky) || (image[kCoords] - stamp.stats.skyEst) *
-                                                 (1.0 / stamp.stats.fwhm) <
-                                             args.threshKernFit)
-                continue;
-
               if(image[kCoords] > args.threshHigh) {
                 image.maskPix(kx, ky);
                 continue;
               }
+
+              if(image.masked(kx, ky) || (image[kCoords] - stamp.stats.skyEst) *
+                                                 (1.0 / stamp.stats.fwhm) <
+                                             args.threshKernFit)
+                continue;
 
               if(image[kCoords] > s.val) {
                 s.val = image[kCoords];
@@ -282,7 +282,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
   while(true) {
     if(attempts >= 5) {
       std::cout << "Creation of histogram unsuccessful after 5 attempts";
-      exit(1);
+      return;
     }
 
     std::fill(bins.begin(), bins.end(), 0);

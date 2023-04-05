@@ -141,11 +141,11 @@ struct Image {
   void maskPix(int x, int y) { mask[x + (y * axis.first)] = true; }
 
   void maskSStamp(SubStamp& sstamp) {
-    for(int x = sstamp.stampCoords.first - args.hSStampWidth;
-        x <= sstamp.stampCoords.first + args.hSStampWidth; x++) {
+    for(int x = sstamp.imageCoords.first - args.hSStampWidth;
+        x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x > axis.first) continue;
-      for(int y = sstamp.stampCoords.second - args.hSStampWidth;
-          y <= sstamp.stampCoords.second + args.hSStampWidth; y++) {
+      for(int y = sstamp.imageCoords.second - args.hSStampWidth;
+          y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y > axis.second) continue;
         this->maskPix(x, y);
       }

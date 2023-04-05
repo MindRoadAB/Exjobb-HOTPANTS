@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
 
   /* ===== SSS ===== */
 
-  std::vector<Stamp> templStamps(args.stampsx * args.stampsy, Stamp{});
-  createStamps(templateImg, templStamps, w, h);
+  std::vector<Stamp> templateStamps(args.stampsx * args.stampsy, Stamp{});
+  createStamps(templateImg, templateStamps, w, h);
   if(args.verbose)
     std::cout << "Stamps created for " << templateImg.name << std::endl
               << std::endl;
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Stamps created for " << scienceImg.name << std::endl
               << std::endl;
 
-  identifySStamps(templStamps, templateImg);
+  identifySStamps(templateStamps, templateImg);
   if(args.verbose)
     std::cout << "Substamps found in " << templateImg.name << std::endl
               << std::endl;
