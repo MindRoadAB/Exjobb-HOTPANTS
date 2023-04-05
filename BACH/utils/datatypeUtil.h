@@ -8,9 +8,9 @@
 
 #include "argsUtil.h"
 
-
 struct SubStamp {
-  std::pair<cl_long, cl_long> subStampCoords{};
+  std::pair<cl_long, cl_long> imageCoords{};
+  std::pair<cl_long, cl_long> stampCoords{};
   cl_double val;
 
   bool operator<(const SubStamp& other) const { return val < other.val; }
@@ -18,56 +18,56 @@ struct SubStamp {
 };
 
 struct StampStats {
-  cl_double skyEst{};            // Mode of stamp
-  cl_double fullWidthHalfMax{};  // Middle part value diff
+  cl_double skyEst{};  // Mode of stamp
+  cl_double fwhm{};    // Middle part value diff (full width half max)
 };
 
 struct Stamp {
-  std::pair<cl_long, cl_long> stampCoords{};
-  std::pair<cl_long, cl_long> stampSize{};
+  std::pair<cl_long, cl_long> coords{};
+  std::pair<cl_long, cl_long> size{};
   std::vector<SubStamp> subStamps{};
-  std::vector<cl_double> stampData{};
-  StampStats stampStats{};
+  std::vector<cl_double> data{};
+  StampStats stats{};
 
   Stamp(){};
   Stamp(std::pair<cl_long, cl_long> stampCoords,
         std::pair<cl_long, cl_long> stampSize,
         const std::vector<SubStamp>& subStamps,
         const std::vector<cl_double>& stampData)
-      : stampCoords{stampCoords},
-        stampSize{stampSize},
+      : coords{stampCoords},
+        size{stampSize},
         subStamps{subStamps},
-        stampData{stampData} {}
+        data{stampData} {}
 
   Stamp(const Stamp& other)
-      : stampCoords{other.stampCoords},
-        stampSize{other.stampSize},
+      : coords{other.coords},
+        size{other.size},
         subStamps{other.subStamps},
-        stampData{other.stampData} {}
+        data{other.data} {}
 
   Stamp(Stamp&& other)
-      : stampCoords{other.stampCoords},
-        stampSize{other.stampSize},
+      : coords{other.coords},
+        size{other.size},
         subStamps{std::move(other.subStamps)},
-        stampData{std::move(other.stampData)} {}
+        data{std::move(other.data)} {}
 
   Stamp& operator=(const Stamp& other) {
-    this->stampCoords = other.stampCoords;
-    this->stampSize = other.stampSize;
+    this->coords = other.coords;
+    this->size = other.size;
     this->subStamps = other.subStamps;
-    this->stampData = other.stampData;
+    this->data = other.data;
     return *this;
   }
 
   Stamp& operator=(Stamp&& other) {
-    this->stampCoords = other.stampCoords;
-    this->stampSize = other.stampSize;
+    this->coords = other.coords;
+    this->size = other.size;
     this->subStamps = std::move(other.subStamps);
-    this->stampData = std::move(other.stampData);
+    this->data = std::move(other.data);
     return *this;
   }
 
-  cl_double operator[](size_t index) { return stampData[index]; }
+  cl_double operator[](size_t index) { return data[index]; }
 };
 
 struct Image {
@@ -141,11 +141,11 @@ struct Image {
   void maskPix(int x, int y) { mask[x + (y * axis.first)] = true; }
 
   void maskSStamp(SubStamp& sstamp) {
-    for(int x = sstamp.subStampCoords.first - args.hSStampWidth;
-        x <= sstamp.subStampCoords.first + args.hSStampWidth; x++) {
+    for(int x = sstamp.stampCoords.first - args.hSStampWidth;
+        x <= sstamp.stampCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x > axis.first) continue;
-      for(int y = sstamp.subStampCoords.second - args.hSStampWidth;
-          y <= sstamp.subStampCoords.second + args.hSStampWidth; y++) {
+      for(int y = sstamp.stampCoords.second - args.hSStampWidth;
+          y <= sstamp.stampCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y > axis.second) continue;
         this->maskPix(x, y);
       }

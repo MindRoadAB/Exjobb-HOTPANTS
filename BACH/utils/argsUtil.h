@@ -72,7 +72,7 @@ inline void getArguments(int argc, char* argv[]) {
   }
 
   if(cmdOptionExists(argv, argv + argc, "-s")) {
-    args.scienceName = getCmdOption(argv, argv + argc, "-t");
+    args.scienceName = getCmdOption(argv, argv + argc, "-s");
   } else {
     throw std::invalid_argument("Science file input is required!");
     return;

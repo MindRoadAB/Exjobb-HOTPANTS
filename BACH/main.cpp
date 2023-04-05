@@ -21,6 +21,11 @@ int main(int argc, char* argv[]) {
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
+
+  if(args.verbose)
+    std::cout << "template image name: " << args.templateName
+              << ", science image name: " << args.scienceName << std::endl;
+
   cl_int err{};
 
   err = readImage(templateImg);
@@ -47,18 +52,20 @@ int main(int argc, char* argv[]) {
   std::vector<Stamp> templStamps(args.stampsx * args.stampsy, Stamp{});
   createStamps(templateImg, templStamps, w, h);
   if(args.verbose)
-    std::cout << "Stamps created for template image" << std::endl;
+    std::cout << "Stamps created for template image" << std::endl << std::endl;
 
   std::vector<Stamp> sciStamps(args.stampsx * args.stampsy, Stamp{});
   createStamps(scienceImg, sciStamps, w, h);
-  if(args.verbose) std::cout << "Stamps created for science image" << std::endl;
+  if(args.verbose)
+    std::cout << "Stamps created for science image" << std::endl << std::endl;
 
   identifySStamps(templStamps, templateImg);
   if(args.verbose)
-    std::cout << "Substamps found in template image" << std::endl;
+    std::cout << "Substamps found in template image" << std::endl << std::endl;
 
   identifySStamps(sciStamps, scienceImg);
-  if(args.verbose) std::cout << "Substamps found in science image" << std::endl;
+  if(args.verbose)
+    std::cout << "Substamps found in science image" << std::endl << std::endl;
 
   /* ===== Conv ===== */
 
