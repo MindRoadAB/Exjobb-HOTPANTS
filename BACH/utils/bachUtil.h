@@ -73,7 +73,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
       absx = x + stamp.coords.first;
       for(long y = 0; y < stamp.size.second; y++) {
         absy = y + stamp.coords.second;
-        coords = x + (y * stamp.size.second);
+        coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
            (stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
@@ -388,11 +388,13 @@ inline void calcStats(Stamp& stamp, Image& image) {
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
+
   for(auto& s : stamps) {
     calcStats(s, image);
     if(args.verbose)
       std::cout << "Mode: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
                 << std::endl;
+
     findSStamps(s, image);
     s.subStamps.erase(
         std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),

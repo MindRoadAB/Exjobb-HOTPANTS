@@ -3,6 +3,7 @@
 
 #include <CL/opencl.h>
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -142,11 +143,11 @@ struct Image {
 
   void maskSStamp(SubStamp& sstamp) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
-        x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
-      if(x < 0 || x > axis.first) continue;
+        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+      if(x < 0 || x >= axis.first) continue;
       for(int y = sstamp.imageCoords.second - args.hSStampWidth;
-          y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
-        if(y < 0 || y > axis.second) continue;
+          y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+        if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y);
       }
     }
