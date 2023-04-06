@@ -30,8 +30,11 @@ int main(int argc, char* argv[]) {
 
   err = readImage(templateImg);
   checkError(err);
+  // TODO: Maybe do maskInput in parallel?
+  maskInput(templateImg);
   err = readImage(scienceImg);
   checkError(err);
+  maskInput(templateImg);
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};

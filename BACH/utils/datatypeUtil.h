@@ -76,7 +76,11 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
   std::vector<cl_double> data{};
-  std::vector<bool> mask{};
+  std::vector<bool> nanMask{};
+  std::vector<bool> badInputMask{};
+  std::vector<bool> badSSSMask{};
+  std::vector<bool> psfMask{};
+  enum masks { nan, badInput, badSSS, psf };
 
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
         const std::string p = "res/")
@@ -84,35 +88,65 @@ struct Image {
         path{p},
         axis{a},
         data(this->size()),
-        mask(this->size(), false) {}
+        nanMask(this->size(), false),
+        badInputMask(this->size(), false),
+        badSSSMask(this->size(), false),
+        psfMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<cl_double> d,
-        std::pair<cl_long, cl_long> a, std::vector<bool> m,
+        std::pair<cl_long, cl_long> a, std::vector<bool> nanM,
+        std::vector<bool> biM, std::vector<bool> sssM, std::vector<bool> psfM,
         const std::string p = "res/")
-      : name{n}, path{p}, axis{a}, data{d}, mask{m} {}
+      : name{n},
+        path{p},
+        axis{a},
+        data{d},
+        nanMask{nanM},
+        badInputMask{biM},
+        badSSSMask{sssM},
+        psfMask{psfM} {}
 
   Image(const Image& other)
       : name{other.name},
         path{other.path},
         axis{other.axis},
         data{other.data},
-        mask{other.mask} {}
+        nanMask(other.nanMask),
+        badInputMask(other.badInputMask),
+        badSSSMask(other.badSSSMask),
+        psfMask(other.psfMask) {}
 
   Image(Image&& other)
       : name{other.name},
         path{other.path},
         axis{other.axis},
         data{std::move(other.data)},
-        mask{std::move(other.mask)} {}
+        nanMask(std::move(other.nanMask)),
+        badInputMask(std::move(other.badInputMask)),
+        badSSSMask(std::move(other.badSSSMask)),
+        psfMask(std::move(other.psfMask)) {}
 
-  Image& operator=(const Image& other) { return *this = Image{other}; }
+  Image& operator=(const Image& other) {
+    name = other.name;
+    path = other.path;
+    axis = other.axis;
+    data = other.data;
+    nanMask = other.nanMask;
+    badInputMask = other.badInputMask;
+    badSSSMask = other.badSSSMask;
+    psfMask = other.psfMask;
+    return *this;
+  }
 
   Image& operator=(Image&& other) {
     name = other.name;
     path = other.path;
     axis = other.axis;
     data = std::move(other.data);
-    mask = std::move(other.mask);
+    nanMask = std::move(other.nanMask);
+    badInputMask = std::move(other.badInputMask);
+    badSSSMask = std::move(other.badSSSMask);
+    psfMask = std::move(other.psfMask);
     return *this;
   }
 
@@ -137,18 +171,60 @@ struct Image {
     return ptr;
   }
 
-  bool masked(int x, int y) { return mask[x + (y * axis.first)]; }
+  bool masked(int x, int y, masks m) {
+    switch(m) {
+      case nan:
+        return nanMask[x + (y * axis.first)];
+        break;
+      case badInput:
+        return badInputMask[x + (y * axis.first)];
+        break;
+      case badSSS:
+        return badSSSMask[x + (y * axis.first)];
+        break;
+      case psf:
+        return psfMask[x + (y * axis.first)];
+        break;
+    }
+    std::cout << "Error: Not caught by the switch case" << std::endl;
+    exit(1);
+  }
 
-  void maskPix(int x, int y) { mask[x + (y * axis.first)] = true; }
+  void maskPix(int x, int y, masks m) {
+    switch(m) {
+      case nan:
+        nanMask[x + (y * axis.first)] = true;
+        break;
+      case badInput:
+        badInputMask[x + (y * axis.first)] = true;
+        break;
+      case badSSS:
+        badSSSMask[x + (y * axis.first)] = true;
+        break;
+      case psf:
+        psfMask[x + (y * axis.first)] = true;
+        break;
+    }
+  }
 
-  void maskSStamp(SubStamp& sstamp) {
+  void maskSStamp(SubStamp& sstamp, masks m) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
         x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
       for(int y = sstamp.imageCoords.second - args.hSStampWidth;
           y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
-        this->maskPix(x, y);
+        this->maskPix(x, y, m);
+      }
+    }
+  }
+
+  void maskAroundPix(int inX, int inY, masks m) {
+    for(int x = inX - args.hSStampWidth; x < inX + args.hSStampWidth; x++) {
+      if(x < 0 || x >= axis.first) continue;
+      for(int y = inY - args.hSStampWidth; y < inY + args.hSStampWidth; y++) {
+        if(y < 0 || y >= axis.second) continue;
+        this->maskPix(x, y, m);
       }
     }
   }

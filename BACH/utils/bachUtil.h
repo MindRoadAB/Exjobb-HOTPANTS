@@ -19,6 +19,20 @@ inline void checkError(cl_int err) {
   }
 }
 
+inline void maskInput(Image& img) {
+  for(long y = 0; y < img.axis.second; y++) {
+    for(long x = 0; x < img.axis.second; x++) {
+      long index = x + y * img.axis.first;
+      if(img[index] >= args.threshHigh || img[index] <= args.threshLow) {
+        img.maskAroundPix(x, y, Image::badInput);
+      }
+      if(std::isnan(img[index])) {
+        img.maskAroundPix(x, y, Image::nan);
+      }
+    }
+  }
+}
+
 inline void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
   for(int j = 0; j < args.stampsy; j++) {
     for(int i = 0; i < args.stampsx; i++) {
@@ -75,9 +89,18 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
         absy = y + stamp.coords.second;
         coords = x + (y * stamp.size.first);
 
-        if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
-           (stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
-               args.threshKernFit) {
+        if(image.masked(absx, absy, Image::badSSS) ||
+           image.masked(absx, absy, Image::psf)) {
+          continue;
+        }
+
+        if(stamp[coords] > args.threshHigh) {
+          image.maskPix(absx, absy, Image::badSSS);
+          continue;
+        }
+
+        if((stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
+           args.threshKernFit) {
           continue;
         }
 
@@ -94,14 +117,20 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
               kCoords = kx + (ky * image.axis.first);
 
               if(image[kCoords] > args.threshHigh) {
-                image.maskPix(kx, ky);
+                image.maskPix(kx, ky, Image::badSSS);
                 continue;
               }
 
-              if(image.masked(kx, ky) || (image[kCoords] - stamp.stats.skyEst) *
-                                                 (1.0 / stamp.stats.fwhm) <
-                                             args.threshKernFit)
+              if(image.masked(kx, ky, Image::badSSS) ||
+                 image.masked(kx, ky, Image::psf)) {
                 continue;
+              }
+
+              if((image[kCoords] - stamp.stats.skyEst) *
+                     (1.0 / stamp.stats.fwhm) <
+                 args.threshKernFit) {
+                continue;
+              }
 
               if(image[kCoords] > s.val) {
                 s.val = image[kCoords];
@@ -114,7 +143,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
 
           checkSStamp(s);
           stamp.subStamps.push_back(s);
-          image.maskSStamp(s);
+          image.maskSStamp(s, Image::psf);
         }
         if(stamp.subStamps.size() >= size_t(args.maxSStamps)) break;
       }
@@ -230,10 +259,12 @@ inline void calcStats(Stamp& stamp, Image& image) {
     cl_int indexS = randX + randY * stamp.size.first;
 
     // Random pixel in stamp in Image coords.
-    cl_int indexI = (randX + stamp.coords.first) +
-                    (randY + stamp.coords.second) * stamp.size.first;
+    cl_int xI = randX + stamp.coords.first;
+    cl_int yI = randY + stamp.coords.second;
 
-    if(image.mask[indexI] || stamp[indexS] < 0 || std::isnan(stamp[indexS])) {
+    if(image.masked(xI, yI, Image::badInput) ||
+       image.masked(xI, yI, Image::nan) || std::isnan(stamp[indexS]) ||
+       stamp[indexS] < 0) {
       continue;
     }
 
@@ -259,10 +290,11 @@ inline void calcStats(Stamp& stamp, Image& image) {
       cl_int indexS = x + y * stamp.size.first;
 
       // Pixel in stamp in Image coords.
-      cl_int indexI = (x + stamp.coords.first) +
-                      (y + stamp.coords.second) * stamp.size.first;
+      cl_int xI = x + stamp.coords.first;
+      cl_int yI = y + stamp.coords.second;
 
-      if(!image.mask[indexI] && stamp[indexS] >= 0) {
+      if(!image.masked(xI, yI, Image::badInput) &&
+         !image.masked(xI, yI, Image::nan) && stamp[indexS] >= 0) {
         maskedStamp.push_back(stamp[indexS]);
       }
     }
@@ -298,10 +330,11 @@ inline void calcStats(Stamp& stamp, Image& image) {
         cl_int indexS = x + y * stamp.size.first;
 
         // Pixel in stamp in Image coords.
-        cl_int indexI = (x + stamp.coords.first) +
-                        (y + stamp.coords.second) * stamp.size.first;
+        cl_int xI = x + stamp.coords.first;
+        cl_int yI = y + stamp.coords.second;
 
-        if(image.mask[indexI] || stamp[indexS] < 0) {
+        if(image.masked(xI, yI, Image::badInput) ||
+           image.masked(xI, yI, Image::nan) || stamp[indexS] < 0) {
           continue;
         }
 
