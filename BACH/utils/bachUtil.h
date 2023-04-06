@@ -72,9 +72,29 @@ inline bool inImage(Image& image, int x, int y) {
   return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
 }
 
-inline void checkSStamp(SubStamp& sstamp) {}
+inline double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
+  double retVal = 0.0;
+  for(int y = sstamp.imageCoords.second - args.hSStampWidth;
+      y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+    if(y < 0 || y >= image.axis.second) continue;
+    for(int x = sstamp.imageCoords.first - args.hSStampWidth;
+        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+      if(x < 0 || x >= image.axis.first) continue;
+      int absCoords = x + y * image.axis.first;
+      if(image.masked(x, y)) return 0.0;
+      if(image[absCoords] >= args.threshHigh) {
+        image.maskPix(x, y);
+        return 0.0;
+      }
+      if((image[absCoords] - stamp.stats.skyEst) / stamp.stats.fwhm >
+         args.threshKernFit)
+        retVal += image[absCoords];
+    }
+  }
+  return retVal;
+}
 
-inline cl_int findSStamps(Stamp& stamp, Image& image) {
+inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
   cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
 
   cl_double dfrac = 0.9;
@@ -116,7 +136,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
               if(ky < 0 || ky >= image.axis.second) continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image[kCoords] > args.threshHigh) {
+              if(image[kCoords] >= args.threshHigh) {
                 image.maskPix(kx, ky, Image::badSSS);
                 continue;
               }
@@ -140,8 +160,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
               }
             }
           }
-
-          checkSStamp(s);
+          s.val = checkSStamp(s, image, stamp);
+          if(s.val == 0) continue;
           stamp.subStamps.push_back(s);
           image.maskSStamp(s, Image::psf);
         }
@@ -149,26 +169,22 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
       }
       if(stamp.subStamps.size() >= size_t(args.maxSStamps)) break;
     }
-    // Compare _tmp_ against a floor value;
     if(lowestPSFLim == floor) break;
     dfrac -= 0.2;
   }
 
   if(stamp.subStamps.size() == 0) {
     if(args.verbose)
-      std::cout << "No suitable substamps found in stamp" << std::endl;
+      std::cout << "No suitable substamps found in stamp " << index
+                << std::endl;
     return 1;
   }
   std::sort(stamp.subStamps.begin(), stamp.subStamps.end(),
             std::greater<SubStamp>());
   if(args.verbose)
-    std::cout << "Added " << stamp.subStamps.size() << " substamps"
-              << std::endl;
+    std::cout << "Added " << stamp.subStamps.size() << " substamps to stamp "
+              << index << std::endl;
   return 0;
-}
-
-inline bool notWithinThresh(SubStamp ss) {
-  return (ss.val < args.threshLow || ss.val > args.threshHigh);
 }
 
 inline void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
@@ -304,9 +320,6 @@ inline void calcStats(Stamp& stamp, Image& image) {
   cl_double mean, stdDev, invStdDev;
   sigmaClip(maskedStamp, mean, stdDev);
   invStdDev = 1.0 / stdDev;
-  if(args.verbose) {
-    std::cout << "Mean: " << mean << " stdDev: " << stdDev << std::endl;
-  }
 
   int attempts = 0;
   cl_int okCount = 0;
@@ -391,8 +404,6 @@ inline void calcStats(Stamp& stamp, Image& image) {
 
     if(lower < 1.0 || upper > 255.0) {
       if(args.verbose) {
-        std::cout << "lower is: " << lower << ", upper is: " << upper
-                  << std::endl;
         std::cout << "Expanding bin size..." << std::endl;
       }
       lowerBinVal -= 128.0 * binSize;
@@ -400,8 +411,6 @@ inline void calcStats(Stamp& stamp, Image& image) {
       attempts++;
     } else if(upper - lower < 40.0) {
       if(args.verbose) {
-        std::cout << "lower is: " << lower << ", upper is: " << upper
-                  << std::endl;
         std::cout << "Shrinking bin size..." << std::endl;
       }
       binSize /= 3.0;
@@ -422,16 +431,11 @@ inline void calcStats(Stamp& stamp, Image& image) {
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
 
+  int index = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
-    if(args.verbose)
-      std::cout << "Mode: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
-                << std::endl;
-
-    findSStamps(s, image);
-    s.subStamps.erase(
-        std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
-        s.subStamps.end());
+    findSStamps(s, image, index);
+    index++;
   }
 }
 

@@ -65,11 +65,35 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
   identifySStamps(templateStamps, templateImg);
+  int hasSStamps = 0;
+  for(auto s : templateStamps) {
+    if(s.subStamps.empty()) hasSStamps++;
+  }
+  if(hasSStamps / templateStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << templateImg.name
+                << " trying again with lower thresholds..." << std::endl;
+    args.threshLow *= 0.5;
+    identifySStamps(templateStamps, templateImg);
+    args.threshLow /= 0.5;
+  }
   if(args.verbose)
     std::cout << "Substamps found in " << templateImg.name << std::endl
               << std::endl;
 
   identifySStamps(sciStamps, scienceImg);
+  hasSStamps = 0;
+  for(auto s : sciStamps) {
+    if(s.subStamps.empty()) hasSStamps++;
+  }
+  if(hasSStamps / sciStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << scienceImg.name
+                << " trying again with lower thresholds..." << std::endl;
+    args.threshLow *= 0.5;
+    identifySStamps(sciStamps, scienceImg);
+    args.threshLow /= 0.5;
+  }
   if(args.verbose)
     std::cout << "Substamps found in " << scienceImg.name << std::endl
               << std::endl;
