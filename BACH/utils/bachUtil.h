@@ -58,7 +58,27 @@ inline bool inImage(Image& image, int x, int y) {
   return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
 }
 
-inline void checkSStamp(SubStamp& sstamp) {}
+inline double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
+  double retVal = 0.0;
+  for(int y = sstamp.imageCoords.second - args.hSStampWidth;
+      y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+    if(y < 0 || y >= image.axis.second) continue;
+    for(int x = sstamp.imageCoords.first - args.hSStampWidth;
+        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+      if(x < 0 || x >= image.axis.first) continue;
+      int absCoords = x + y * image.axis.first;
+      if(image.masked(x, y)) return 0.0;
+      if(image[absCoords] >= args.threshHigh) {
+        image.maskPix(x, y);
+        return 0.0;
+      }
+      if((image[absCoords] - stamp.stats.skyEst) / stamp.stats.fwhm >
+         args.threshKernFit)
+        retVal += image[absCoords];
+    }
+  }
+  return retVal;
+}
 
 inline cl_int findSStamps(Stamp& stamp, Image& image) {
   cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
@@ -112,7 +132,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
             }
           }
 
-          checkSStamp(s);
+          if(checkSStamp(s, image, stamp) == 0) continue;
           stamp.subStamps.push_back(s);
           image.maskSStamp(s);
         }
@@ -120,7 +140,6 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
       }
       if(stamp.subStamps.size() >= size_t(args.maxSStamps)) break;
     }
-    // Compare _tmp_ against a floor value;
     if(lowestPSFLim == floor) break;
     dfrac -= 0.2;
   }
@@ -131,7 +150,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
     return 1;
   }
   std::sort(stamp.subStamps.begin(), stamp.subStamps.end(),
-            std::greater<SubStamp>());
+            std::greater<SubStamp>());  // TODO: fix with peaks
   if(args.verbose)
     std::cout << "Added " << stamp.subStamps.size() << " substamps"
               << std::endl;
