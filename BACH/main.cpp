@@ -67,6 +67,9 @@ int main(int argc, char* argv[]) {
     if(s.subStamps.empty()) hasSStamps++;
   }
   if(hasSStamps / templateStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << templateImg.name
+                << " trying again with lower thresholds..." << std::endl;
     args.threshLow *= 0.5;
     identifySStamps(templateStamps, templateImg);
     args.threshLow /= 0.5;
@@ -81,6 +84,9 @@ int main(int argc, char* argv[]) {
     if(s.subStamps.empty()) hasSStamps++;
   }
   if(hasSStamps / sciStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << scienceImg.name
+                << " trying again with lower thresholds..." << std::endl;
     args.threshLow *= 0.5;
     identifySStamps(sciStamps, scienceImg);
     args.threshLow /= 0.5;
