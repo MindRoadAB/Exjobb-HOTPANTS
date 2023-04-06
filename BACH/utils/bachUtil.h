@@ -80,10 +80,13 @@ inline double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
         x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= image.axis.first) continue;
+
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y)) return 0.0;
+      if(image.masked(x, y, Image::badSSS) || image.masked(x, y, Image::psf))
+        return 0.0;
+
       if(image[absCoords] >= args.threshHigh) {
-        image.maskPix(x, y);
+        image.maskPix(x, y, Image::badSSS);
         return 0.0;
       }
       if((image[absCoords] - stamp.stats.skyEst) / stamp.stats.fwhm >
