@@ -60,20 +60,19 @@ inline bool inImage(Image& image, int x, int y) {
 
 inline void checkSStamp(SubStamp& sstamp) {}
 
-inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
-  int foundSStamps = 0;
+inline cl_int findSStamps(Stamp& stamp, Image& image) {
   cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
-  cl_double _tmp_;
+
   cl_double dfrac = 0.9;
-  while(foundSStamps < args.maxSStamps) {
-    int absx, absy, coords, absCoords;
-    _tmp_ = std::max(floor, stamp.stats.skyEst +
-                                (args.threshHigh - stamp.stats.skyEst) * dfrac);
-    for(int x = 0; x < stamp.size.first; x++) {
+  while(stamp.subStamps.size() < size_t(args.maxSStamps)) {
+    long absx, absy, coords;
+    cl_double lowestPSFLim =
+        std::max(floor, stamp.stats.skyEst +
+                            (args.threshHigh - stamp.stats.skyEst) * dfrac);
+    for(long x = 0; x < stamp.size.first; x++) {
       absx = x + stamp.coords.first;
-      for(int y = 0; y < stamp.size.second; y++) {
+      for(long y = 0; y < stamp.size.second; y++) {
         absy = y + stamp.coords.second;
-        absCoords = absx + absy * image.axis.first;
         coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
@@ -82,14 +81,14 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
           continue;
         }
 
-        if(stamp[coords] > _tmp_) {  // good candidate found
+        if(stamp[coords] > lowestPSFLim) {  // good candidate found
           SubStamp s{std::make_pair(absx, absy), std::make_pair(x, y),
                      stamp[coords]};
-          int kCoords;
-          for(int kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
+          long kCoords;
+          for(long kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
               kx++) {
             if(kx < 0 || kx >= image.axis.first) continue;
-            for(int ky = absy - args.hSStampWidth;
+            for(long ky = absy - args.hSStampWidth;
                 ky < absy + args.hSStampWidth; ky++) {
               if(ky < 0 || ky >= image.axis.second) continue;
               kCoords = kx + (ky * image.axis.first);
@@ -115,19 +114,18 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
 
           checkSStamp(s);
           stamp.subStamps.push_back(s);
-          foundSStamps++;
           image.maskSStamp(s);
         }
-        if(foundSStamps >= args.maxSStamps) break;
+        if(stamp.subStamps.size() >= size_t(args.maxSStamps)) break;
       }
-      if(foundSStamps >= args.maxSStamps) break;
+      if(stamp.subStamps.size() >= size_t(args.maxSStamps)) break;
     }
     // Compare _tmp_ against a floor value;
-    if(_tmp_ == floor) break;
+    if(lowestPSFLim == floor) break;
     dfrac -= 0.2;
   }
 
-  if(foundSStamps == 0) {
+  if(stamp.subStamps.size() == 0) {
     if(args.verbose)
       std::cout << "No suitable substamps found in stamp" << std::endl;
     return 1;
@@ -224,7 +222,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
   std::uniform_int_distribution<cl_int> randGenY(0, stamp.size.second - 1);
 
   // Stop after randomly having selected a pixel numPix times.
-  for(int i = 0; (i < numPix) && (values.size() < nValues); i++) {
+  for(int i = 0; (i < numPix) && (values.size() < size_t(nValues)); i++) {
     int randX = randGenX(gen);
     int randY = randGenY(gen);
 
@@ -390,18 +388,17 @@ inline void calcStats(Stamp& stamp, Image& image) {
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
-  int i = 0;
+
   for(auto& s : stamps) {
     calcStats(s, image);
     if(args.verbose)
       std::cout << "Mode: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
                 << std::endl;
-    std::cout << "index: " << i << std::endl;
-    findSStamps(s, image, i);
+
+    findSStamps(s, image);
     s.subStamps.erase(
         std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
         s.subStamps.end());
-    i++;
   }
 }
 
