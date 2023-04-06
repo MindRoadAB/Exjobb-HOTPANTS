@@ -236,7 +236,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
     cl_int indexI = (randX + stamp.coords.first) +
                     (randY + stamp.coords.second) * stamp.size.first;
 
-    if(image.mask[indexI] || stamp[indexS] < 0) {
+    if(image.mask[indexI] || stamp[indexS] < 0 || std::isnan(stamp[indexS])) {
       continue;
     }
 
@@ -295,8 +295,8 @@ inline void calcStats(Stamp& stamp, Image& image) {
     sum = 0.0;
     sumBins = 0.0;
     sumExpect = 0.0;
-    for(int x = 0; x < stamp.size.first; x++) {
-      for(int y = 0; y < stamp.size.second; y++) {
+    for(int y = 0; y < stamp.size.second; y++) {
+      for(int x = 0; x < stamp.size.first; x++) {
         // Pixel in stamp in stamp coords.
         cl_int indexS = x + y * stamp.size.first;
 
@@ -308,7 +308,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
           continue;
         }
 
-        if((abs(stamp[indexS] - mean) * invStdDev) > args.sigClipAlpha) {
+        if((std::abs(stamp[indexS] - mean) * invStdDev) > args.sigClipAlpha) {
           continue;
         }
 
