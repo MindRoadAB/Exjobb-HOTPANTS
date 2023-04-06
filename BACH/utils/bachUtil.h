@@ -222,7 +222,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
   std::uniform_int_distribution<cl_int> randGenY(0, stamp.size.second - 1);
 
   // Stop after randomly having selected a pixel numPix times.
-  for(int i = 0; (i < numPix) && (values.size() < nValues); i++) {
+  for(int i = 0; (i < numPix) && (values.size() < size_t(nValues)); i++) {
     int randX = randGenX(gen);
     int randY = randGenY(gen);
 
