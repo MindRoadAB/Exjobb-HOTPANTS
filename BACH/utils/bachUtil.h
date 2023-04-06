@@ -60,11 +60,10 @@ inline bool inImage(Image& image, int x, int y) {
 
 inline void checkSStamp(SubStamp& sstamp) {}
 
-inline cl_int findSStamps(Stamp& stamp, Image& image) {
+inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
   int foundSStamps = 0;
   cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
   cl_double _tmp_;
-  // TODO: why is dfrac == 0.9?
   cl_double dfrac = 0.9;
   while(foundSStamps < args.maxSStamps) {
     int absx, absy, coords, absCoords;
@@ -75,7 +74,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image) {
       for(int y = 0; y < stamp.size.second; y++) {
         absy = y + stamp.coords.second;
         absCoords = absx + absy * image.axis.first;
-        coords = x + (y * stamp.size.second);
+        coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy) || stamp[coords] > args.threshHigh ||
            (stamp[coords] - stamp.stats.skyEst) * (1.0 / stamp.stats.fwhm) <
@@ -391,15 +390,18 @@ inline void calcStats(Stamp& stamp, Image& image) {
 
 inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
+  int i = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
     if(args.verbose)
       std::cout << "Mode: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
                 << std::endl;
-    findSStamps(s, image);
+    std::cout << "index: " << i << std::endl;
+    findSStamps(s, image, i);
     s.subStamps.erase(
         std::remove_if(s.subStamps.begin(), s.subStamps.end(), notWithinThresh),
         s.subStamps.end());
+    i++;
   }
 }
 
