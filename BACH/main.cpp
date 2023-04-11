@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   maskInput(templateImg);
   err = readImage(scienceImg);
   checkError(err);
-  maskInput(templateImg);
+  maskInput(scienceImg);
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};

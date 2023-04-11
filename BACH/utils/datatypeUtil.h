@@ -185,25 +185,29 @@ struct Image {
       case psf:
         return psfMask[x + (y * axis.first)];
         break;
+      default:
+        std::cout << "Error: Not caught by the switch case" << std::endl;
+        exit(1);
     }
-    std::cout << "Error: Not caught by the switch case" << std::endl;
-    exit(1);
   }
 
   void maskPix(int x, int y, masks m) {
     switch(m) {
       case nan:
         nanMask[x + (y * axis.first)] = true;
-        break;
+        return;
       case badInput:
         badInputMask[x + (y * axis.first)] = true;
-        break;
+        return;
       case badSSS:
         badSSSMask[x + (y * axis.first)] = true;
-        break;
+        return;
       case psf:
         psfMask[x + (y * axis.first)] = true;
-        break;
+        return;
+      default:
+        std::cout << "Error: Not caught by the switch case" << std::endl;
+        exit(1);
     }
   }
 
