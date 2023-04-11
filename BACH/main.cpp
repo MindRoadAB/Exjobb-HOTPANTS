@@ -21,10 +21,20 @@ int main(int argc, char* argv[]) {
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
+
+  if(args.verbose)
+    std::cout << "template image name: " << args.templateName
+              << ", science image name: " << args.scienceName << std::endl;
+
   cl_int err{};
 
   err = readImage(templateImg);
   checkError(err);
+  // TODO: Maybe do maskInput in parallel?
+  maskInput(templateImg);
+  err = readImage(scienceImg);
+  checkError(err);
+  maskInput(scienceImg);
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -33,10 +43,66 @@ int main(int argc, char* argv[]) {
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
   auto [w, h] = templateImg.axis;
+  if(w != scienceImg.axis.first || h != scienceImg.axis.second) {
+    std::cout << "Template image and science image must be the same size!"
+              << std::endl;
 
-  cl::Buffer imgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer outimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_READ_WRITE, sizeof(cl_double) * w * h);
+    exit(1);
+  }
+
+  /* ===== SSS ===== */
+
+  std::vector<Stamp> templateStamps{};
+  createStamps(templateImg, templateStamps, w, h);
+  if(args.verbose)
+    std::cout << "Stamps created for " << templateImg.name << std::endl
+              << std::endl;
+
+  std::vector<Stamp> sciStamps{};
+  createStamps(scienceImg, sciStamps, w, h);
+  if(args.verbose)
+    std::cout << "Stamps created for " << scienceImg.name << std::endl
+              << std::endl;
+
+  identifySStamps(templateStamps, templateImg);
+  int hasSStamps = 0;
+  for(auto s : templateStamps) {
+    if(s.subStamps.empty()) hasSStamps++;
+  }
+  if(hasSStamps / templateStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << templateImg.name
+                << " trying again with lower thresholds..." << std::endl;
+    args.threshLow *= 0.5;
+    identifySStamps(templateStamps, templateImg);
+    args.threshLow /= 0.5;
+  }
+  if(args.verbose)
+    std::cout << "Substamps found in " << templateImg.name << std::endl
+              << std::endl;
+
+  identifySStamps(sciStamps, scienceImg);
+  hasSStamps = 0;
+  for(auto s : sciStamps) {
+    if(s.subStamps.empty()) hasSStamps++;
+  }
+  if(hasSStamps / sciStamps.size() < 0.1) {
+    if(args.verbose)
+      std::cout << "Not enough substamps found in " << scienceImg.name
+                << " trying again with lower thresholds..." << std::endl;
+    args.threshLow *= 0.5;
+    identifySStamps(sciStamps, scienceImg);
+    args.threshLow /= 0.5;
+  }
+  if(args.verbose)
+    std::cout << "Substamps found in " << scienceImg.name << std::endl
+              << std::endl;
+
+  /* ===== Conv ===== */
+
+  cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   // box 5x5
   cl_long kernWidth = 5;
@@ -44,7 +110,7 @@ int main(int argc, char* argv[]) {
   cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
                           a, a, a, a, a, a, a, a, a, a, a, a};
 
-  cl::Buffer kernbuf(context, CL_MEM_READ_WRITE,
+  cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * kernWidth * kernWidth);
 
   cl::CommandQueue queue(context, default_device);
@@ -52,8 +118,9 @@ int main(int argc, char* argv[]) {
   err = queue.enqueueWriteBuffer(
       kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
   checkError(err);
+
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 templateImg.data);
+                                 &templateImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -65,7 +132,7 @@ int main(int argc, char* argv[]) {
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, outImg.data);
+                                sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
   err = writeImage(outImg);
@@ -76,7 +143,7 @@ int main(int argc, char* argv[]) {
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, diffImg.data);
+                                sizeof(cl_double) * w * h, &diffImg);
   checkError(err);
 
   err = writeImage(diffImg);
