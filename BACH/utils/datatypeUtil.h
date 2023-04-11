@@ -75,13 +75,17 @@ struct Image {
   std::string name;
   std::string path;
   std::pair<cl_long, cl_long> axis;
+
+  enum masks { nan, badInput, badPixel, psf };
+
+ private:
   std::vector<cl_double> data{};
   std::vector<bool> nanMask{};
   std::vector<bool> badInputMask{};
-  std::vector<bool> badSSSMask{};
+  std::vector<bool> badPixelMask{};
   std::vector<bool> psfMask{};
-  enum masks { nan, badInput, badSSS, psf };
 
+ public:
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
         const std::string p = "res/")
       : name{n},
@@ -90,21 +94,19 @@ struct Image {
         data(this->size()),
         nanMask(this->size(), false),
         badInputMask(this->size(), false),
-        badSSSMask(this->size(), false),
+        badPixelMask(this->size(), false),
         psfMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<cl_double> d,
-        std::pair<cl_long, cl_long> a, std::vector<bool> nanM,
-        std::vector<bool> biM, std::vector<bool> sssM, std::vector<bool> psfM,
-        const std::string p = "res/")
+        std::pair<cl_long, cl_long> a, const std::string p = "res/")
       : name{n},
         path{p},
         axis{a},
         data{d},
-        nanMask{nanM},
-        badInputMask{biM},
-        badSSSMask{sssM},
-        psfMask{psfM} {}
+        nanMask(this->size(), false),
+        badInputMask(this->size(), false),
+        badPixelMask(this->size(), false),
+        psfMask(this->size(), false) {}
 
   Image(const Image& other)
       : name{other.name},
@@ -113,7 +115,7 @@ struct Image {
         data{other.data},
         nanMask(other.nanMask),
         badInputMask(other.badInputMask),
-        badSSSMask(other.badSSSMask),
+        badPixelMask(other.badPixelMask),
         psfMask(other.psfMask) {}
 
   Image(Image&& other)
@@ -123,7 +125,7 @@ struct Image {
         data{std::move(other.data)},
         nanMask(std::move(other.nanMask)),
         badInputMask(std::move(other.badInputMask)),
-        badSSSMask(std::move(other.badSSSMask)),
+        badPixelMask(std::move(other.badPixelMask)),
         psfMask(std::move(other.psfMask)) {}
 
   Image& operator=(const Image& other) {
@@ -133,7 +135,7 @@ struct Image {
     data = other.data;
     nanMask = other.nanMask;
     badInputMask = other.badInputMask;
-    badSSSMask = other.badSSSMask;
+    badPixelMask = other.badPixelMask;
     psfMask = other.psfMask;
     return *this;
   }
@@ -145,10 +147,12 @@ struct Image {
     data = std::move(other.data);
     nanMask = std::move(other.nanMask);
     badInputMask = std::move(other.badInputMask);
-    badSSSMask = std::move(other.badSSSMask);
+    badPixelMask = std::move(other.badPixelMask);
     psfMask = std::move(other.psfMask);
     return *this;
   }
+
+  cl_double* operator&() { return &data[0]; }
 
   cl_double operator[](size_t index) { return data[index]; }
 
@@ -179,8 +183,8 @@ struct Image {
       case badInput:
         return badInputMask[x + (y * axis.first)];
         break;
-      case badSSS:
-        return badSSSMask[x + (y * axis.first)];
+      case badPixel:
+        return badPixelMask[x + (y * axis.first)];
         break;
       case psf:
         return psfMask[x + (y * axis.first)];
@@ -199,8 +203,8 @@ struct Image {
       case badInput:
         badInputMask[x + (y * axis.first)] = true;
         return;
-      case badSSS:
-        badSSSMask[x + (y * axis.first)] = true;
+      case badPixel:
+        badPixelMask[x + (y * axis.first)] = true;
         return;
       case psf:
         psfMask[x + (y * axis.first)] = true;

@@ -56,7 +56,7 @@ inline void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
       Stamp tmpS{};
       for(int y = 0; y < stamph; y++) {
         for(int x = 0; x < stampw; x++) {
-          cl_double tmp = img.data[(startx + x) + ((starty + y) * w)];
+          cl_double tmp = img[(startx + x) + ((starty + y) * w)];
           tmpS.data.push_back(tmp);
         }
       }
@@ -82,11 +82,11 @@ inline double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
       if(x < 0 || x >= image.axis.first) continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y, Image::badSSS) || image.masked(x, y, Image::psf))
+      if(image.masked(x, y, Image::badPixel) || image.masked(x, y, Image::psf))
         return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
-        image.maskPix(x, y, Image::badSSS);
+        image.maskPix(x, y, Image::badPixel);
         return 0.0;
       }
       if((image[absCoords] - stamp.stats.skyEst) / stamp.stats.fwhm >
@@ -112,13 +112,13 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         absy = y + stamp.coords.second;
         coords = x + (y * stamp.size.first);
 
-        if(image.masked(absx, absy, Image::badSSS) ||
+        if(image.masked(absx, absy, Image::badPixel) ||
            image.masked(absx, absy, Image::psf)) {
           continue;
         }
 
         if(stamp[coords] > args.threshHigh) {
-          image.maskPix(absx, absy, Image::badSSS);
+          image.maskPix(absx, absy, Image::badPixel);
           continue;
         }
 
@@ -140,11 +140,11 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
               kCoords = kx + (ky * image.axis.first);
 
               if(image[kCoords] >= args.threshHigh) {
-                image.maskPix(kx, ky, Image::badSSS);
+                image.maskPix(kx, ky, Image::badPixel);
                 continue;
               }
 
-              if(image.masked(kx, ky, Image::badSSS) ||
+              if(image.masked(kx, ky, Image::badPixel) ||
                  image.masked(kx, ky, Image::psf)) {
                 continue;
               }

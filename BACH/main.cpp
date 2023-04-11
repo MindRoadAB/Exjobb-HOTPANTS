@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
   checkError(err);
 
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 &templateImg.data[0]);
+                                 &templateImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &outImg.data[0]);
+                                sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
   err = writeImage(outImg);
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &diffImg.data[0]);
+                                sizeof(cl_double) * w * h, &diffImg);
   checkError(err);
 
   err = writeImage(diffImg);
