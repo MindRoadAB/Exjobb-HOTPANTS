@@ -9,6 +9,22 @@
 
 #include "argsUtil.h"
 
+struct Kernel {
+  std::vector<cl_double> kernVec;
+
+  inline void setKernVec() {
+    int i = 0;
+    for(int gauss = 0; gauss < args.dg.size(); gauss++) {
+      for(int x = 0; x <= args.dg[gauss]; x++) {
+        for(int y = 0; y <= args.dg[gauss] - x; y++) {
+          kernVec[i] = 0.0;
+          i++;
+        }
+      }
+    }
+  }
+};
+
 struct SubStamp {
   std::pair<cl_long, cl_long> imageCoords{};
   std::pair<cl_long, cl_long> stampCoords{};
