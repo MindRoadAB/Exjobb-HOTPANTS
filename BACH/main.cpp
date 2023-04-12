@@ -64,33 +64,33 @@ int main(int argc, char* argv[]) {
     std::cout << "Stamps created for " << scienceImg.name << std::endl
               << std::endl;
 
-  int numTemplStamps = identifySStamps(templateStamps, templateImg);
-  if(numTemplStamps / templateStamps.size() < 0.1) {
+  int numTemplSStamps = identifySStamps(templateStamps, templateImg);
+  if(numTemplSStamps / templateStamps.size() < 0.1) {
     if(args.verbose)
       std::cout << "Not enough substamps found in " << templateImg.name
                 << " trying again with lower thresholds..." << std::endl;
     args.threshLow *= 0.5;
-    numTemplStamps = identifySStamps(templateStamps, templateImg);
+    numTemplSStamps = identifySStamps(templateStamps, templateImg);
     args.threshLow /= 0.5;
   }
   if(args.verbose)
     std::cout << "Substamps found in " << templateImg.name << std::endl
               << std::endl;
 
-  int numSciStamps = identifySStamps(sciStamps, scienceImg);
-  if(numSciStamps / sciStamps.size() < 0.1) {
+  int numSciSStamps = identifySStamps(sciStamps, scienceImg);
+  if(numSciSStamps / sciStamps.size() < 0.1) {
     if(args.verbose)
       std::cout << "Not enough substamps found in " << scienceImg.name
                 << " trying again with lower thresholds..." << std::endl;
     args.threshLow *= 0.5;
-    numSciStamps = identifySStamps(sciStamps, scienceImg);
+    numSciSStamps = identifySStamps(sciStamps, scienceImg);
     args.threshLow /= 0.5;
   }
   if(args.verbose)
     std::cout << "Substamps found in " << scienceImg.name << std::endl
               << std::endl;
 
-  if(numTemplStamps == 0 && numSciStamps == 0) {
+  if(numTemplSStamps == 0 && numSciSStamps == 0) {
     std::cout << "No substamps found" << std::endl;
     exit(1);
   }
