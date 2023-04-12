@@ -441,4 +441,32 @@ inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   }
 }
 
+// TODO: can this live in the stamp struct?
+inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
+  for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+    cl_double p0 = 0.0;
+    for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+      for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+        int k = x + args.hSStampWidth +
+                (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+        int imgIndex =
+            x + s.coords.first + (y + s.coords.second) * s.size.first;
+        p0 += s.W[i][k] * img[imgIndex];
+      }
+    }
+    s.B[i + 1] = p0;
+  }
+
+  cl_double q = 0.0;
+  for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+    for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+      int k = x + args.hSStampWidth +
+              (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+      int imgIndex = x + s.coords.first + (y + s.coords.second) * s.size.first;
+      q += s.W[args.tmp_num_kernel_components][k] * img[imgIndex];
+    }
+  }
+  s.B[args.tmp_num_kernel_components + 1] = q;
+}
+
 #endif
