@@ -29,6 +29,9 @@ struct Stamp {
   std::vector<SubStamp> subStamps{};
   std::vector<cl_double> data{};
   StampStats stats{};
+  std::vector<std::vector<cl_double>> W{};
+  std::vector<std::vector<cl_double>> Q{};
+  std::vector<cl_double> B{};
 
   Stamp(){};
   Stamp(std::pair<cl_long, cl_long> stampCoords,
@@ -69,6 +72,58 @@ struct Stamp {
   }
 
   cl_double operator[](size_t index) { return data[index]; }
+
+  cl_double pixels() { return size.first * size.second; }
+
+  inline void createQ() {  // see Equation 2.12
+    for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+      for(int j = 0; j <= i; j++) {
+        cl_double q = 0.0;
+        for(int k = 0; k < pixels(); k++) q += W[i][k] + W[j][k];
+        Q[i + 1][j + 1] = q;
+      }
+    }
+
+    for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+      cl_double p0 = 0.0;
+      for(int k = 0; k < pixels(); k++)
+        p0 += W[i][k] * W[args.tmp_num_kernel_components][k];
+      Q[args.tmp_num_kernel_components + 1][i + 1] = p0;
+    }
+
+    cl_double q = 0.0;
+    for(int k = 0; k < pixels(); k++)
+      q += W[args.tmp_num_kernel_components][k] *
+           W[args.tmp_num_kernel_components][k];
+    Q[args.tmp_num_kernel_components + 1][args.tmp_num_kernel_components + 1] =
+        q;
+  }
+
+  inline void createB(Image& img) {  // see Equation 2.13
+    for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+      cl_double p0 = 0.0;
+      for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+        for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+          int k = x + args.hSStampWidth +
+                  (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+          int imgIndex = x + coords.first + (y + coords.second) * size.first;
+          p0 += W[i][k] * img[imgIndex];
+        }
+      }
+      B[i + 1] = p0;
+    }
+
+    cl_double q = 0.0;
+    for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+      for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+        int k = x + args.hSStampWidth +
+                (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+        int imgIndex = x + coords.first + (y + coords.second) * size.first;
+        q += W[args.tmp_num_kernel_components][k] * img[imgIndex];
+      }
+    }
+    B[args.tmp_num_kernel_components + 1] = q;
+  }
 };
 
 struct Image {

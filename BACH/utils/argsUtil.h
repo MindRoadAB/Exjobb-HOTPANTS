@@ -27,7 +27,9 @@ struct Arguments {
   cl_double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
-  cl_int hSStampWidth = 15;  // half substamp width
+  cl_int hSStampWidth = 15;              // half substamp width
+
+  cl_int tmp_num_kernel_components = 3;  // TODO: set properly
 
   bool verbose = false;
 };
