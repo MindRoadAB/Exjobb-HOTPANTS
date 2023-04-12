@@ -479,6 +479,29 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
     return;
   }
 
-  for(int g = 0; g < args.) }
+  int nvec = 0;
+  for(int g = 0; g < args.dg.size(); g++) {
+    for(int x = 0; x <= args.dg[g]; x++) {
+      for(int y = 0; y <= args.dg[g] - x; y++) {
+        int ren = 0;  // TODO: what is this?
+
+        // TODO: why do this, compiler will just set to 0?
+        cl_double dx = (x / 2) * 2 - x;
+        cl_double dy = (y / 2) * 2 - y;
+        if(dx == 0 && dy == 0 && nvec > 0) ren = 1;
+
+        // TODO: convolve here
+        nvec++;
+      }
+    }
+  }
+
+  // TODO: cut the stamp
+
+  // TODO: fill background
+
+  s.createQ();  // TODO: is name accurate?
+  createB(s, sImg);
+}
 
 #endif

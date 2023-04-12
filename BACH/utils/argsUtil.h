@@ -32,7 +32,7 @@ struct Arguments {
 
   cl_int tmp_num_kernel_components = 3;  // TODO: set properly
 
-  std::vector<cl_int> dg = {6, 4, 2};
+  std::vector<cl_int> dg = {6, 4, 2};    // ngauss = length of dg
 
   bool verbose = false;
 };
