@@ -469,4 +469,13 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
   s.B[args.tmp_num_kernel_components + 1] = q;
 }
 
+inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
+  // TODO
+  if(/*no good ss*/) {
+    if(args.verbose)
+      std::cout << "No eligable substamps, stamp rejected" << std::endl;
+    return;
+  }
+}
+
 #endif
