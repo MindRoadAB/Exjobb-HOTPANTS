@@ -29,8 +29,14 @@ struct Arguments {
 
   cl_int maxSStamps = 6;
   cl_int hSStampWidth = 15;  // half substamp width
+  cl_int fSStampWidth = 30;  // half substamp width
 
   std::vector<cl_int> dg = {6, 4, 2};
+  std::vector<cl_double> bg = {
+      (1.0 / (2.0 * 0.7 * 0.7)),
+      (1.0 / (2.0 * 1.5 * 1.5)),
+      (1.0 / (2.0 * 3.0 * 3.0)),
+  };
 
   bool verbose = false;
 };

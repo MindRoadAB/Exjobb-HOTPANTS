@@ -3,25 +3,104 @@
 
 #include <CL/opencl.h>
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "argsUtil.h"
 
-struct Kernel {
-  std::vector<cl_double> kernVec;
+struct kernelStats {
+  cl_int gauss;
+  cl_int x;
+  cl_int y;
+};
 
-  inline void setKernVec() {
+struct Kernel {
+  std::vector<std::vector<cl_double>> kernVec{};
+
+  /*
+   * filterX and filterY is basically a convolution kernel, we probably can
+   * represent it a such
+   *
+   * TODO: Implementation closer to the math. (Will also probably make it so we
+   * can use openCL convolution )
+   */
+
+  std::vector<std::vector<cl_double>> filterX{};
+  std::vector<std::vector<cl_double>> filterY{};
+  std::vector<kernelStats> stats{};
+
+  void resetKernVec() {
+    /* Fill Kerenel Vector
+     * TODO: Make parallel, should be very possible. You can interprate stats as
+     * a Vec3 in a kernel.
+     */
     int i = 0;
-    for(int gauss = 0; gauss < args.dg.size(); gauss++) {
+    for(int gauss = 0; gauss < cl_int(args.dg.size()); gauss++) {
       for(int x = 0; x <= args.dg[gauss]; x++) {
         for(int y = 0; y <= args.dg[gauss] - x; y++) {
-          kernVec[i] = 0.0;
+          stats.push_back({gauss, x, y});
+          resetKernelHelper(i);
           i++;
         }
       }
     }
+  }
+
+ private:
+  void resetKernelHelper(cl_int n) {
+    /* Will perfom one iteration of equation 2.3 but without a fit parameter.
+     *
+     * TODO: Make into a clKernel, look at hotpants for c indexing instead.
+     */
+
+    std::vector<cl_double> temp{};
+    std::vector<cl_double> kern0{};
+    cl_double sumX = 0, sumY = 0;
+    // UNSURE: Don't really know why dx,dy are a thing
+    cl_int dx = (stats[n].x / 2) * 2 - stats[n].x;
+    cl_int dy = (stats[n].y / 2) * 2 - stats[n].y;
+
+    filterX.emplace_back();
+    filterY.emplace_back();
+
+    // Calculate Equation (2.4)
+    for(int i = 0; i < args.fSStampWidth; i++) {
+      cl_double x = cl_double(i - args.hSStampWidth);
+      cl_double qe = std::exp(-x * x * args.bg[stats[n].gauss]);
+      filterX[n].push_back(qe * pow(x, stats[n].x));
+      filterY[n].push_back(qe * pow(x, stats[n].y));
+      sumX += filterX[n].back();
+      sumY += filterY[n].back();
+    }
+
+    sumX = 1. / sumX;
+    sumY = 1. / sumY;
+
+    // UNSURE: Why the two different calculations?
+    if(dx == 0 && dy == 0) {
+      for(int uv = 0; uv < args.fSStampWidth; uv++) {
+        filterX[n][uv] *= sumX;
+        filterY[n][uv] *= sumY;
+      }
+
+      for(int u = 0; u < args.fSStampWidth; u++) {
+        for(int v = 0; v < args.fSStampWidth; v++) {
+          temp.push_back(filterX[n][u] * filterX[n][v]);
+          if(n > 0) {
+            temp.back() -= kernVec[0][u + v * args.fSStampWidth];
+          }
+        }
+      }
+    } else {
+      for(int u = 0; u < args.fSStampWidth; u++) {
+        for(int v = 0; v < args.fSStampWidth; v++) {
+          temp.push_back(filterX[n][u] * filterX[n][v]);
+        }
+      }
+    }
+    kernVec.push_back(temp);
   }
 };
 
