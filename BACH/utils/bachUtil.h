@@ -431,15 +431,17 @@ inline void calcStats(Stamp& stamp, Image& image) {
   median = lowerBinVal + binSize * (median - 1.0);
 }
 
-inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
+inline int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
 
-  int index = 0;
+  int index = 0, hasSStamps = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
     findSStamps(s, image, index);
+    if(!s.subStamps.empty()) hasSStamps++;
     index++;
   }
+  return hasSStamps;
 }
 
 #endif

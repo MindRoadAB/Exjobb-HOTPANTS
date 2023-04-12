@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 struct Arguments {
   std::string templateName;
@@ -28,6 +29,8 @@ struct Arguments {
 
   cl_int maxSStamps = 6;
   cl_int hSStampWidth = 15;  // half substamp width
+
+  std::vector<cl_int> dg = {6, 4, 2};
 
   bool verbose = false;
 };
