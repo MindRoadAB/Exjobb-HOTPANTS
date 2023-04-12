@@ -476,6 +476,7 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
       std::cout << "No eligable substamps, stamp rejected" << std::endl;
     return;
   }
-}
+
+  for(int g = 0; g < args.) }
 
 #endif
