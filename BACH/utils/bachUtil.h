@@ -490,7 +490,7 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
   std::vector<cl_double> tmp{};
 
-  int totWidth = args.hSStampWidth + args.hKernelWidth - 1;
+  int totWidth = args.fSStampWidth + args.fKernelWidth - 1;
   for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
       i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
     for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
@@ -498,16 +498,12 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
           i - ssx + totWidth / 2 + totWidth * (j - ssy + args.hSStampWidth);
       tmp.push_back(0.0);
       if(index != tmp.size() - 1)
-        std::cout << "index is: " << index << ", tmp length is: " << tmp.size()
-                  << std::endl;
-      for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
-        std::cout << "i";
-        int imgIndex = i + (j + y) * img.axis.first;
-        tmp[index] += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
-      }
+        for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
+          int imgIndex = i + (j + y) * img.axis.first;
+          tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+        }
     }
   }
-  std::cout << "After loop 1" << std::endl;
 
   for(int j = -args.hSStampWidth; j <= args.hSStampWidth; j++) {
     for(int i = -args.hSStampWidth; i <= args.hSStampWidth; i++) {
@@ -516,13 +512,10 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       s.W[n].push_back(0.0);
       for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
         int imgIndex = i + (j + x) * img.axis.first;
-        s.W[n][index] +=
-            tmp[i + x + totWidth / 2 + (j + args.hSStampWidth) * totWidth] *
-            k.filterX[n][args.hKernelWidth - x];
+        s.W[n][index] += tmp[index] * k.filterX[n][args.hKernelWidth - x];
       }
     }
   }
-  std::cout << "After loop 2" << std::endl;
 
   if(odd) {
     for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++)
@@ -535,10 +528,12 @@ inline void cutSStamp(SubStamp& ss, Image& img) {
   ss.init();
   int ssx = ss.imageCoords.first;
   int ssy = ss.imageCoords.second;
-  for(int y = 0; y <= args.fSStampWidth; y++) {
+  for(int y = 0; y < args.fSStampWidth; y++) {
     int imgY = ssy + y - args.hSStampWidth;
-    for(int x = 0; x <= args.fSStampWidth; x++) {
+    for(int x = 0; x < args.fSStampWidth; x++) {
+      std::cout << "i";
       int imgX = ssx + x - args.hSStampWidth;
+      if(ss.data.size() - 1 < x + y * args.fSStampWidth) std::cout << "ohno";
       ss[x + y * args.fSStampWidth] = img[imgX + imgY * img.axis.first];
       ss.sum += img.masked(imgX, imgY, Image::badInput) ||
                         img.masked(imgX, imgY, Image::nan)
@@ -574,6 +569,7 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   cutSStamp(s.subStamps[0], sImg);
+  std::cout << "get cut" << std::endl;
 
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
