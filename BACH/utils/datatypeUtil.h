@@ -213,7 +213,7 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
 
-  enum masks { nan, badInput, badPixel, psf };
+  enum masks { nan, badInput, badPixel, psf, edge };
 
  private:
   std::vector<cl_double> data{};
@@ -221,6 +221,7 @@ struct Image {
   std::vector<bool> badInputMask{};
   std::vector<bool> badPixelMask{};
   std::vector<bool> psfMask{};
+  std::vector<bool> edgeMask{};
 
  public:
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
@@ -232,7 +233,8 @@ struct Image {
         nanMask(this->size(), false),
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
-        psfMask(this->size(), false) {}
+        psfMask(this->size(), false),
+        edgeMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<cl_double> d,
         std::pair<cl_long, cl_long> a, const std::string p = "res/")
@@ -243,7 +245,8 @@ struct Image {
         nanMask(this->size(), false),
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
-        psfMask(this->size(), false) {}
+        psfMask(this->size(), false),
+        edgeMask(this->size(), false) {}
 
   Image(const Image& other)
       : name{other.name},
@@ -253,7 +256,8 @@ struct Image {
         nanMask(other.nanMask),
         badInputMask(other.badInputMask),
         badPixelMask(other.badPixelMask),
-        psfMask(other.psfMask) {}
+        psfMask(other.psfMask),
+        edgeMask(other.edgeMask) {}
 
   Image(Image&& other)
       : name{other.name},
@@ -263,7 +267,8 @@ struct Image {
         nanMask(std::move(other.nanMask)),
         badInputMask(std::move(other.badInputMask)),
         badPixelMask(std::move(other.badPixelMask)),
-        psfMask(std::move(other.psfMask)) {}
+        psfMask(std::move(other.psfMask)),
+        edgeMask(std::move(other.edgeMask)) {}
 
   Image& operator=(const Image& other) {
     name = other.name;
@@ -274,6 +279,7 @@ struct Image {
     badInputMask = other.badInputMask;
     badPixelMask = other.badPixelMask;
     psfMask = other.psfMask;
+    edgeMask = other.edgeMask;
     return *this;
   }
 
@@ -286,6 +292,7 @@ struct Image {
     badInputMask = std::move(other.badInputMask);
     badPixelMask = std::move(other.badPixelMask);
     psfMask = std::move(other.psfMask);
+    edgeMask = std::move(other.edgeMask);
     return *this;
   }
 
@@ -326,6 +333,9 @@ struct Image {
       case psf:
         return psfMask[x + (y * axis.first)];
         break;
+      case edge:
+        return edgeMask[x + (y * axis.first)];
+        break;
       default:
         std::cout << "Error: Not caught by the switch case" << std::endl;
         exit(1);
@@ -345,6 +355,9 @@ struct Image {
         return;
       case psf:
         psfMask[x + (y * axis.first)] = true;
+        return;
+      case edge:
+        edgeMask[x + (y * axis.first)] = true;
         return;
       default:
         std::cout << "Error: Not caught by the switch case" << std::endl;

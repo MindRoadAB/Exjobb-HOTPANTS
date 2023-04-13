@@ -23,6 +23,10 @@ inline void maskInput(Image& img) {
   for(long y = 0; y < img.axis.second; y++) {
     for(long x = 0; x < img.axis.first; x++) {
       long index = x + y * img.axis.first;
+      int borderSize = args.hSStampWidth + args.hKernelWidth;
+      if(x < borderSize || x > img.axis.first - borderSize || y < borderSize ||
+         y > img.axis.second - borderSize)
+        img.maskPix(x, y, Image::edge);
       if(img[index] >= args.threshHigh || img[index] <= args.threshLow) {
         img.maskAroundPix(x, y, Image::badInput);
       }
@@ -113,7 +117,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy, Image::badPixel) ||
-           image.masked(absx, absy, Image::psf)) {
+           image.masked(absx, absy, Image::psf) ||
+           image.masked(absx, absy, Image::edge)) {
           continue;
         }
 
@@ -148,7 +153,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
               }
 
               if(image.masked(kx, ky, Image::badPixel) ||
-                 image.masked(kx, ky, Image::psf)) {
+                 image.masked(kx, ky, Image::psf) ||
+                 image.masked(kx, ky, Image::edge)) {
                 continue;
               }
 
@@ -491,6 +497,9 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       int index =
           i - ssx + totWidth / 2 + totWidth * (j - ssy + args.hSStampWidth);
       tmp.push_back(0.0);
+      if(index != tmp.size() - 1)
+        std::cout << "index is: " << index << ", tmp length is: " << tmp.size()
+                  << std::endl;
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         std::cout << "i";
         int imgIndex = i + (j + y) * img.axis.first;
