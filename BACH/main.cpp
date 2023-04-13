@@ -102,6 +102,12 @@ int main(int argc, char* argv[]) {
 
   if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
+  for(auto s : templateStamps) {
+    fillStamp(s, templateImg, scienceImg, convolutionKernel);
+  }
+  for(auto s : sciStamps) {
+    fillStamp(s, scienceImg, templateImg, convolutionKernel);
+  }
 
   /* ===== Conv ===== */
 

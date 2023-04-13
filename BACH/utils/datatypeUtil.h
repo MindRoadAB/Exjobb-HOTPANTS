@@ -38,6 +38,7 @@ struct Kernel {
      * TODO: Make parallel, should be very possible. You can interprate stats as
      * a Vec3 in a kernel.
      */
+    if(args.verbose) std::cout << "Creating kernel vectors..." << std::endl;
     int i = 0;
     for(int gauss = 0; gauss < cl_int(args.dg.size()); gauss++) {
       for(int x = 0; x <= args.dg[gauss]; x++) {
@@ -182,6 +183,7 @@ struct Stamp {
   cl_double pixels() { return size.first * size.second; }
 
   inline void createQ() {  // see Equation 2.12
+    if(args.verbose) std::cout << "Creating Q?..." << std::endl;
     for(int i = 0; i < args.tmp_num_kernel_components; i++) {
       for(int j = 0; j <= i; j++) {
         cl_double q = 0.0;

@@ -448,6 +448,7 @@ inline int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
 
 // TODO: can this live in the stamp struct?
 inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
+  if(args.verbose) std::cout << "Creating B..." << std::endl;
   for(int i = 0; i < args.tmp_num_kernel_components; i++) {
     cl_double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
@@ -475,10 +476,13 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
 }
 
 inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
+  if(args.verbose) std::cout << "Convolving stamp..." << std::endl;
+
+  s.W.emplace_back();
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
 
-  std::vector<cl_double> tmp;
+  std::vector<cl_double> tmp{};
 
   int totWidth = args.hSStampWidth + args.hKernelWidth - 1;
   for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
@@ -486,19 +490,21 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
     for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
       int index =
           i - ssx + totWidth / 2 + totWidth * (j - ssy + args.hSStampWidth);
-      tmp[index] = 0.0;
+      tmp.push_back(0.0);
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
+        std::cout << "i";
         int imgIndex = i + (j + y) * img.axis.first;
         tmp[index] += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
       }
     }
   }
+  std::cout << "After loop 1" << std::endl;
 
   for(int j = -args.hSStampWidth; j <= args.hSStampWidth; j++) {
     for(int i = -args.hSStampWidth; i <= args.hSStampWidth; i++) {
       int index =
           i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
-      s.W[n][index] = 0.0;
+      s.W[n].push_back(0.0);
       for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
         int imgIndex = i + (j + x) * img.axis.first;
         s.W[n][index] +=
@@ -507,6 +513,7 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       }
     }
   }
+  std::cout << "After loop 2" << std::endl;
 
   if(odd) {
     for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++)
@@ -515,6 +522,7 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 }
 
 inline void cutSStamp(SubStamp& ss, Image& img) {
+  if(args.verbose) std::cout << "Cutting substamp..." << std::endl;
   ss.init();
   int ssx = ss.imageCoords.first;
   int ssy = ss.imageCoords.second;
@@ -532,6 +540,7 @@ inline void cutSStamp(SubStamp& ss, Image& img) {
 }
 
 inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
+  if(args.verbose) std::cout << "Filling stamp..." << std::endl;
   if(s.subStamps.empty()) {
     if(args.verbose)
       std::cout << "No eligable substamps, stamp rejected" << std::endl;
@@ -549,6 +558,7 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
         if(dx == 0 && dy == 0 && nvec > 0) odd = 1;
 
         convStamp(s, tImg, k, nvec, odd);
+        std::cout << "Stamp convolved" << std::endl;
         nvec++;
       }
     }
