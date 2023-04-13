@@ -102,7 +102,6 @@ int main(int argc, char* argv[]) {
 
   if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
-  convolutionKernel.resetKernVec();
 
   /* ===== Conv ===== */
 
