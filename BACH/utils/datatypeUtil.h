@@ -31,6 +31,8 @@ struct Kernel {
   std::vector<std::vector<cl_double>> filterY{};
   std::vector<kernelStats> stats{};
 
+  Kernel() { resetKernVec(); }
+
   void resetKernVec() {
     /* Fill Kerenel Vector
      * TODO: Make parallel, should be very possible. You can interprate stats as
