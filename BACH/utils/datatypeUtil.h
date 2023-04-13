@@ -66,8 +66,8 @@ struct Kernel {
     filterY.emplace_back();
 
     // Calculate Equation (2.4)
-    for(int i = 0; i < args.fSStampWidth; i++) {
-      cl_double x = cl_double(i - args.hSStampWidth);
+    for(int i = 0; i < args.fKernelWidth; i++) {
+      cl_double x = cl_double(i - args.hKernelWidth);
       cl_double qe = std::exp(-x * x * args.bg[stats[n].gauss]);
       filterX[n].push_back(qe * pow(x, stats[n].x));
       filterY[n].push_back(qe * pow(x, stats[n].y));
@@ -80,22 +80,22 @@ struct Kernel {
 
     // UNSURE: Why the two different calculations?
     if(dx == 0 && dy == 0) {
-      for(int uv = 0; uv < args.fSStampWidth; uv++) {
+      for(int uv = 0; uv < args.fKernelWidth; uv++) {
         filterX[n][uv] *= sumX;
         filterY[n][uv] *= sumY;
       }
 
-      for(int u = 0; u < args.fSStampWidth; u++) {
-        for(int v = 0; v < args.fSStampWidth; v++) {
+      for(int u = 0; u < args.fKernelWidth; u++) {
+        for(int v = 0; v < args.fKernelWidth; v++) {
           temp.push_back(filterX[n][u] * filterX[n][v]);
           if(n > 0) {
-            temp.back() -= kernVec[0][u + v * args.fSStampWidth];
+            temp.back() -= kernVec[0][u + v * args.fKernelWidth];
           }
         }
       }
     } else {
-      for(int u = 0; u < args.fSStampWidth; u++) {
-        for(int v = 0; v < args.fSStampWidth; v++) {
+      for(int u = 0; u < args.fKernelWidth; u++) {
+        for(int v = 0; v < args.fKernelWidth; v++) {
           temp.push_back(filterX[n][u] * filterX[n][v]);
         }
       }
