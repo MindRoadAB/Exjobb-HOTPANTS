@@ -107,12 +107,21 @@ struct Kernel {
 };
 
 struct SubStamp {
+  std::vector<cl_double> data;
+  cl_double sum = 0.0;
   std::pair<cl_long, cl_long> imageCoords{};
   std::pair<cl_long, cl_long> stampCoords{};
   cl_double val;
 
   bool operator<(const SubStamp& other) const { return val < other.val; }
   bool operator>(const SubStamp& other) const { return val > other.val; }
+
+  cl_double& operator[](size_t index) { return data[index]; }
+
+  void init() {
+    data =
+        std::vector<cl_double>(args.fSStampWidth * args.fSStampWidth, 1.e-30);
+  }
 };
 
 struct StampStats {

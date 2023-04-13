@@ -128,7 +128,10 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         }
 
         if(stamp[coords] > lowestPSFLim) {  // good candidate found
-          SubStamp s{std::make_pair(absx, absy), std::make_pair(x, y),
+          SubStamp s{{},
+                     0.0,
+                     std::make_pair(absx, absy),
+                     std::make_pair(x, y),
                      stamp[coords]};
           long kCoords;
           for(long kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
@@ -511,8 +514,24 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
   }
 }
 
+inline void cutSStamp(SubStamp& ss, Image& img) {
+  ss.init();
+  int ssx = ss.imageCoords.first;
+  int ssy = ss.imageCoords.second;
+  for(int y = 0; y <= args.fSStampWidth; y++) {
+    int imgY = ssy + y - args.hSStampWidth;
+    for(int x = 0; x <= args.fSStampWidth; x++) {
+      int imgX = ssx + x - args.hSStampWidth;
+      ss[x + y * args.fSStampWidth] = img[imgX + imgY * img.axis.first];
+      ss.sum += img.masked(imgX, imgY, Image::badInput) ||
+                        img.masked(imgX, imgY, Image::nan)
+                    ? 0.0
+                    : abs(img[imgX + imgY * img.axis.first]);
+    }
+  }
+}
+
 inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
-  // TODO
   if(s.subStamps.empty()) {
     if(args.verbose)
       std::cout << "No eligable substamps, stamp rejected" << std::endl;
@@ -535,9 +554,8 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
     }
   }
 
-  // TODO: cut the stamp
+  cutSStamp(s.subStamps[0], sImg);
 
-  // TODO: fill background
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
   for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
