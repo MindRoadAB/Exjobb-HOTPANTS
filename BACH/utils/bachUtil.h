@@ -471,24 +471,47 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
   s.B[args.tmp_num_kernel_components + 1] = q;
 }
 
-inline void conv(Stamp& s) {
+inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
 
-  int sw = args.hSStampWidth + args.hKernelWidth - 1;
+  std::vector<cl_double> tmp;
+
+  int totWidth = args.hSStampWidth + args.hKernelWidth - 1;
   for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
-      i <= ssx + +args.hSStampWidth + args.hKernelWidth; i++) {
-    for(int j = ssy - args.hSStampWidth; j <= ssy; j++) {
-      int xij = i - ssx + sw / 2 + sw * (j - ssy + args.hSStampWidth);
-      tmp[xij] = 0.0;
+      i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
+    for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
+      int index =
+          i - ssx + totWidth / 2 + totWidth * (j - ssy + args.hSStampWidth);
+      tmp[index] = 0.0;
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
-        tmp[xij] += img[] * filt[];
+        int imgIndex = i + (j + y) * img.axis.first;
+        tmp[index] += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
       }
     }
   }
+
+  for(int j = -args.hSStampWidth; j <= args.hSStampWidth; j++) {
+    for(int i = -args.hSStampWidth; i <= args.hSStampWidth; i++) {
+      int index =
+          i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
+      s.W[n][index] = 0.0;
+      for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
+        int imgIndex = i + (j + x) * img.axis.first;
+        s.W[n][index] +=
+            tmp[i + x + totWidth / 2 + (j + args.hSStampWidth) * totWidth] *
+            k.filterX[n][args.hKernelWidth - x];
+      }
+    }
+  }
+
+  if(odd) {
+    for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++)
+      s.W[n][i] -= s.W[0][i];
+  }
 }
 
-inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
+inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   // TODO
   if(s.subStamps.empty()) {
     if(args.verbose)
@@ -500,14 +523,13 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
   for(int g = 0; g < args.dg.size(); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
-        int ren = 0;  // TODO: what is this?
+        int odd = 0;
 
-        // TODO: why do this, compiler will just set to 0?
         cl_double dx = (x / 2) * 2 - x;
         cl_double dy = (y / 2) * 2 - y;
-        if(dx == 0 && dy == 0 && nvec > 0) ren = 1;
+        if(dx == 0 && dy == 0 && nvec > 0) odd = 1;
 
-        // TODO: convolve here
+        convStamp(s, tImg, k, nvec, odd);
         nvec++;
       }
     }
@@ -516,6 +538,24 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
   // TODO: cut the stamp
 
   // TODO: fill background
+  cl_long ssx = s.subStamps[0].imageCoords.first;
+  cl_long ssy = s.subStamps[0].imageCoords.second;
+  for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
+    for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
+      cl_double ax = 1.0;
+      int n = nvec;
+      for(int j = 0; j <= args.backgroundOrder; j++) {
+        cl_double ay = 1.0;
+        for(int k = 0; k <= args.backgroundOrder - j; k++) {
+          s.W[n++][x - (ssx - args.hSStampWidth) +
+                   (y - (ssy - args.hSStampWidth)) * args.fSStampWidth] =
+              ax * ay;
+          ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
+        }
+        ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
+      }
+    }
+  }
 
   s.createQ();  // TODO: is name accurate?
   createB(s, sImg);
