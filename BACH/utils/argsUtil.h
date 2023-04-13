@@ -29,6 +29,7 @@ struct Arguments {
 
   cl_int maxSStamps = 6;
   cl_int hSStampWidth = 15;              // half substamp width
+  cl_int hKernelWidth = 10;              // half kernel width
 
   cl_int tmp_num_kernel_components = 3;  // TODO: set properly
 

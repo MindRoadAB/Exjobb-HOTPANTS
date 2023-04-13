@@ -471,9 +471,26 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
   s.B[args.tmp_num_kernel_components + 1] = q;
 }
 
+inline void conv(Stamp& s) {
+  cl_long ssx = s.subStamps[0].imageCoords.first;
+  cl_long ssy = s.subStamps[0].imageCoords.second;
+
+  int sw = args.hSStampWidth + args.hKernelWidth - 1;
+  for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
+      i <= ssx + +args.hSStampWidth + args.hKernelWidth; i++) {
+    for(int j = ssy - args.hSStampWidth; j <= ssy; j++) {
+      int xij = i - ssx + sw / 2 + sw * (j - ssy + args.hSStampWidth);
+      tmp[xij] = 0.0;
+      for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
+        tmp[xij] += img[] * filt[];
+      }
+    }
+  }
+}
+
 inline void fillStamp(Stamp& s, Image& tImg, Image& sImg) {
   // TODO
-  if(/*no good ss*/) {
+  if(s.subStamps.empty()) {
     if(args.verbose)
       std::cout << "No eligable substamps, stamp rejected" << std::endl;
     return;
