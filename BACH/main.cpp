@@ -54,18 +54,19 @@ int main(int argc, char* argv[]) {
 
   std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
-  if(args.verbose)
-    std::cout << "Stamps created for " << templateImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Stamps created for " << templateImg.name << std::endl;
+  }
 
   std::vector<Stamp> sciStamps{};
   createStamps(scienceImg, sciStamps, w, h);
-  if(args.verbose)
-    std::cout << "Stamps created for " << scienceImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Stamps created for " << scienceImg.name << std::endl;
+  }
 
+  /* == Check Template Stamps  ==*/
   int numTemplSStamps = identifySStamps(templateStamps, templateImg);
-  if(numTemplSStamps / templateStamps.size() < 0.1) {
+  if(cl_double(numTemplSStamps) / templateStamps.size() < 0.1) {
     if(args.verbose)
       std::cout << "Not enough substamps found in " << templateImg.name
                 << " trying again with lower thresholds..." << std::endl;
@@ -73,22 +74,24 @@ int main(int argc, char* argv[]) {
     numTemplSStamps = identifySStamps(templateStamps, templateImg);
     args.threshLow /= 0.5;
   }
-  if(args.verbose)
-    std::cout << "Substamps found in " << templateImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Substamps found in " << templateImg.name << std::endl;
+  }
 
+  /* == Check Science Stamps  ==*/
   int numSciSStamps = identifySStamps(sciStamps, scienceImg);
-  if(numSciSStamps / sciStamps.size() < 0.1) {
-    if(args.verbose)
+  if(cl_double(numSciSStamps) / sciStamps.size() < 0.1) {
+    if(args.verbose) {
       std::cout << "Not enough substamps found in " << scienceImg.name
                 << " trying again with lower thresholds..." << std::endl;
+    }
     args.threshLow *= 0.5;
     numSciSStamps = identifySStamps(sciStamps, scienceImg);
     args.threshLow /= 0.5;
   }
-  if(args.verbose)
-    std::cout << "Substamps found in " << scienceImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Substamps found in " << scienceImg.name << std::endl;
+  }
 
   if(numTemplSStamps == 0 && numSciSStamps == 0) {
     std::cout << "No substamps found" << std::endl;
@@ -98,6 +101,8 @@ int main(int argc, char* argv[]) {
   /* ===== CMV ===== */
 
   if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
+  Kernel convolutionKernel{};
+  convolutionKernel.resetKernVec();
 
   /* ===== Conv ===== */
 

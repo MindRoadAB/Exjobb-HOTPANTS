@@ -28,12 +28,21 @@ struct Arguments {
   cl_double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
-  cl_int hSStampWidth = 15;              // half substamp width
-  cl_int hKernelWidth = 10;              // half kernel width
 
   cl_int tmp_num_kernel_components = 3;  // TODO: set properly
 
   std::vector<cl_int> dg = {6, 4, 2};    // ngauss = length of dg
+  cl_int hSStampWidth = 15;              // half substamp width
+  cl_int fSStampWidth = 30;              // full substamp width
+  cl_int hKernelWidth = 10;              // half kernel width
+  cl_int fKernelWidth = 20;              // full kernel width
+
+  std::vector<cl_int> dg = {6, 4, 2};
+  std::vector<cl_double> bg = {
+      (1.0 / (2.0 * 0.7 * 0.7)),
+      (1.0 / (2.0 * 1.5 * 1.5)),
+      (1.0 / (2.0 * 3.0 * 3.0)),
+  };
 
   bool verbose = false;
 };
