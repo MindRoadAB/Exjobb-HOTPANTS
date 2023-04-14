@@ -185,10 +185,6 @@ struct Stamp {
   inline void createQ() {  // see Equation 2.12
     if(args.verbose) std::cout << "Creating Q?..." << std::endl;
 
-    // Q = std::vector<std::vector<cl_double>>(
-    //     args.tmp_num_kernel_components + 1,
-    //     std::vector<cl_double>(args.tmp_num_kernel_components + 1, 0.0));
-
     Q.emplace_back();
     for(int i = 0; i < args.nPSF; i++) {
       Q.emplace_back();
@@ -197,9 +193,6 @@ struct Stamp {
         cl_double q = 0.0;
         for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
           q += W[i][k] + W[j][k];
-          if(std::isnan(q)) {
-            std::cout << "WTF" << std::endl;
-          }
         }
         Q.back().push_back(q);
       }

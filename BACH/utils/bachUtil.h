@@ -578,13 +578,19 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   cl_long ssy = s.subStamps[0].imageCoords.second;
 
   for(int j = 0; j <= args.backgroundOrder; j++) {
-    cl_double ax = 1.0;
     for(int k = 0; k <= args.backgroundOrder - j; k++) {
-      cl_double ay = 1.0;
       s.W.emplace_back();
-      for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
-        for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
-          s.W.back().push_back(ax * ay);
+    }
+  }
+
+  for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
+    for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
+      cl_double ax = 1.0;
+      cl_int nBGVec = 0;
+      for(int j = 0; j <= args.backgroundOrder; j++) {
+        cl_double ay = 1.0;
+        for(int k = 0; k <= args.backgroundOrder - j; k++) {
+          s.W[args.nPSF + nBGVec++].push_back(ax * ay);
           ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
         }
         ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
