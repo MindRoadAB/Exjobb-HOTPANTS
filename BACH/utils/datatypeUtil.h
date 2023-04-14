@@ -3,19 +3,121 @@
 
 #include <CL/opencl.h>
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "argsUtil.h"
 
+struct kernelStats {
+  cl_int gauss;
+  cl_int x;
+  cl_int y;
+};
+
+struct Kernel {
+  std::vector<std::vector<cl_double>> kernVec{};
+
+  /*
+   * filterX and filterY is basically a convolution kernel, we probably can
+   * represent it a such
+   *
+   * TODO: Implementation closer to the math. (Will also probably make it so we
+   * can use openCL convolution )
+   */
+
+  std::vector<std::vector<cl_double>> filterX{};
+  std::vector<std::vector<cl_double>> filterY{};
+  std::vector<kernelStats> stats{};
+
+  Kernel() { resetKernVec(); }
+
+  void resetKernVec() {
+    /* Fill Kerenel Vector
+     * TODO: Make parallel, should be very possible. You can interprate stats as
+     * a Vec3 in a kernel.
+     */
+    if(args.verbose) std::cout << "Creating kernel vectors..." << std::endl;
+    int i = 0;
+    for(int gauss = 0; gauss < cl_int(args.dg.size()); gauss++) {
+      for(int x = 0; x <= args.dg[gauss]; x++) {
+        for(int y = 0; y <= args.dg[gauss] - x; y++) {
+          stats.push_back({gauss, x, y});
+          resetKernelHelper(i);
+          i++;
+        }
+      }
+    }
+  }
+
+ private:
+  void resetKernelHelper(cl_int n) {
+    /* Will perfom one iteration of equation 2.3 but without a fit parameter.
+     *
+     * TODO: Make into a clKernel, look at hotpants for c indexing instead.
+     */
+
+    std::vector<cl_double> temp{};
+    std::vector<cl_double> kern0{};
+    cl_double sumX = 0, sumY = 0;
+    // UNSURE: Don't really know why dx,dy are a thing
+    cl_int dx = (stats[n].x / 2) * 2 - stats[n].x;
+    cl_int dy = (stats[n].y / 2) * 2 - stats[n].y;
+
+    filterX.emplace_back();
+    filterY.emplace_back();
+
+    // Calculate Equation (2.4)
+    for(int i = 0; i < args.fKernelWidth; i++) {
+      cl_double x = cl_double(i - args.hKernelWidth);
+      cl_double qe = std::exp(-x * x * args.bg[stats[n].gauss]);
+      filterX[n].push_back(qe * pow(x, stats[n].x));
+      filterY[n].push_back(qe * pow(x, stats[n].y));
+      sumX += filterX[n].back();
+      sumY += filterY[n].back();
+    }
+
+    sumX = 1. / sumX;
+    sumY = 1. / sumY;
+
+    // UNSURE: Why the two different calculations?
+    if(dx == 0 && dy == 0) {
+      for(int uv = 0; uv < args.fKernelWidth; uv++) {
+        filterX[n][uv] *= sumX;
+        filterY[n][uv] *= sumY;
+      }
+
+      for(int u = 0; u < args.fKernelWidth; u++) {
+        for(int v = 0; v < args.fKernelWidth; v++) {
+          temp.push_back(filterX[n][u] * filterX[n][v]);
+          if(n > 0) {
+            temp.back() -= kernVec[0][u + v * args.fKernelWidth];
+          }
+        }
+      }
+    } else {
+      for(int u = 0; u < args.fKernelWidth; u++) {
+        for(int v = 0; v < args.fKernelWidth; v++) {
+          temp.push_back(filterX[n][u] * filterX[n][v]);
+        }
+      }
+    }
+    kernVec.push_back(temp);
+  }
+};
+
 struct SubStamp {
+  std::vector<cl_double> data;
+  cl_double sum = 0.0;
   std::pair<cl_long, cl_long> imageCoords{};
   std::pair<cl_long, cl_long> stampCoords{};
   cl_double val;
 
   bool operator<(const SubStamp& other) const { return val < other.val; }
   bool operator>(const SubStamp& other) const { return val > other.val; }
+
+  cl_double& operator[](size_t index) { return data[index]; }
 };
 
 struct StampStats {
@@ -29,6 +131,9 @@ struct Stamp {
   std::vector<SubStamp> subStamps{};
   std::vector<cl_double> data{};
   StampStats stats{};
+  std::vector<std::vector<cl_double>> W{};
+  std::vector<std::vector<cl_double>> Q{};
+  std::vector<cl_double> B{};
 
   Stamp(){};
   Stamp(std::pair<cl_long, cl_long> stampCoords,
@@ -69,6 +174,40 @@ struct Stamp {
   }
 
   cl_double operator[](size_t index) { return data[index]; }
+
+  cl_double pixels() { return size.first * size.second; }
+
+  inline void createQ() {
+    /* Does Equation 2.12 which create the left side of the Equation Ma=B */
+    if(args.verbose) std::cout << "Creating Q?..." << std::endl;
+
+    Q.emplace_back();
+    for(int i = 0; i < args.nPSF; i++) {
+      Q.emplace_back();
+      for(int j = 0; j <= i; j++) {
+        Q.back().emplace_back();
+        cl_double q = 0.0;
+        for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
+          q += W[i][k] + W[j][k];
+        }
+        Q.back().push_back(q);
+      }
+    }
+
+    Q.emplace_back();
+    for(int i = 0; i < args.nPSF; i++) {
+      cl_double p0 = 0.0;
+      for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
+        p0 += W[i][k] * W[args.nPSF][k];
+      }
+      Q.back().push_back(p0);
+    }
+
+    cl_double q = 0.0;
+    for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++)
+      q += W[args.nPSF][k] * W[args.nPSF][k];
+    Q[args.nPSF + 1][args.nPSF + 1] = q;
+  }
 };
 
 struct Image {
@@ -76,7 +215,7 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
 
-  enum masks { nan, badInput, badPixel, psf };
+  enum masks { nan, badInput, badPixel, psf, edge };
 
  private:
   std::vector<cl_double> data{};
@@ -84,6 +223,7 @@ struct Image {
   std::vector<bool> badInputMask{};
   std::vector<bool> badPixelMask{};
   std::vector<bool> psfMask{};
+  std::vector<bool> edgeMask{};
 
  public:
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
@@ -95,7 +235,8 @@ struct Image {
         nanMask(this->size(), false),
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
-        psfMask(this->size(), false) {}
+        psfMask(this->size(), false),
+        edgeMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<cl_double> d,
         std::pair<cl_long, cl_long> a, const std::string p = "res/")
@@ -106,7 +247,8 @@ struct Image {
         nanMask(this->size(), false),
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
-        psfMask(this->size(), false) {}
+        psfMask(this->size(), false),
+        edgeMask(this->size(), false) {}
 
   Image(const Image& other)
       : name{other.name},
@@ -116,7 +258,8 @@ struct Image {
         nanMask(other.nanMask),
         badInputMask(other.badInputMask),
         badPixelMask(other.badPixelMask),
-        psfMask(other.psfMask) {}
+        psfMask(other.psfMask),
+        edgeMask(other.edgeMask) {}
 
   Image(Image&& other)
       : name{other.name},
@@ -126,7 +269,8 @@ struct Image {
         nanMask(std::move(other.nanMask)),
         badInputMask(std::move(other.badInputMask)),
         badPixelMask(std::move(other.badPixelMask)),
-        psfMask(std::move(other.psfMask)) {}
+        psfMask(std::move(other.psfMask)),
+        edgeMask(std::move(other.edgeMask)) {}
 
   Image& operator=(const Image& other) {
     name = other.name;
@@ -137,6 +281,7 @@ struct Image {
     badInputMask = other.badInputMask;
     badPixelMask = other.badPixelMask;
     psfMask = other.psfMask;
+    edgeMask = other.edgeMask;
     return *this;
   }
 
@@ -149,6 +294,7 @@ struct Image {
     badInputMask = std::move(other.badInputMask);
     badPixelMask = std::move(other.badPixelMask);
     psfMask = std::move(other.psfMask);
+    edgeMask = std::move(other.edgeMask);
     return *this;
   }
 
@@ -189,6 +335,9 @@ struct Image {
       case psf:
         return psfMask[x + (y * axis.first)];
         break;
+      case edge:
+        return edgeMask[x + (y * axis.first)];
+        break;
       default:
         std::cout << "Error: Not caught by the switch case" << std::endl;
         exit(1);
@@ -208,6 +357,9 @@ struct Image {
         return;
       case psf:
         psfMask[x + (y * axis.first)] = true;
+        return;
+      case edge:
+        edgeMask[x + (y * axis.first)] = true;
         return;
       default:
         std::cout << "Error: Not caught by the switch case" << std::endl;

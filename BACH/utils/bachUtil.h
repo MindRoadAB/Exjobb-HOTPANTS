@@ -23,6 +23,10 @@ inline void maskInput(Image& img) {
   for(long y = 0; y < img.axis.second; y++) {
     for(long x = 0; x < img.axis.first; x++) {
       long index = x + y * img.axis.first;
+      int borderSize = args.hSStampWidth + args.hKernelWidth;
+      if(x < borderSize || x > img.axis.first - borderSize || y < borderSize ||
+         y > img.axis.second - borderSize)
+        img.maskPix(x, y, Image::edge);
       if(img[index] >= args.threshHigh || img[index] <= args.threshLow) {
         img.maskAroundPix(x, y, Image::badInput);
       }
@@ -113,7 +117,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy, Image::badPixel) ||
-           image.masked(absx, absy, Image::psf)) {
+           image.masked(absx, absy, Image::psf) ||
+           image.masked(absx, absy, Image::edge)) {
           continue;
         }
 
@@ -128,7 +133,10 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         }
 
         if(stamp[coords] > lowestPSFLim) {  // good candidate found
-          SubStamp s{std::make_pair(absx, absy), std::make_pair(x, y),
+          SubStamp s{{},
+                     0.0,
+                     std::make_pair(absx, absy),
+                     std::make_pair(x, y),
                      stamp[coords]};
           long kCoords;
           for(long kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
@@ -145,7 +153,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
               }
 
               if(image.masked(kx, ky, Image::badPixel) ||
-                 image.masked(kx, ky, Image::psf)) {
+                 image.masked(kx, ky, Image::psf) ||
+                 image.masked(kx, ky, Image::edge)) {
                 continue;
               }
 
@@ -430,15 +439,175 @@ inline void calcStats(Stamp& stamp, Image& image) {
   median = lowerBinVal + binSize * (median - 1.0);
 }
 
-inline void identifySStamps(std::vector<Stamp>& stamps, Image& image) {
+inline int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   std::cout << "Identifying sub-stamps in " << image.name << "..." << std::endl;
 
-  int index = 0;
+  int index = 0, hasSStamps = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
     findSStamps(s, image, index);
+    if(!s.subStamps.empty()) hasSStamps++;
     index++;
   }
+  return hasSStamps;
+}
+
+inline void createB(Stamp& s, Image& img) {
+  /* Does Equation 2.13 which create the right side of the Equation Ma=B */
+  if(args.verbose) std::cout << "Creating B..." << std::endl;
+
+  s.B.emplace_back();
+  for(int i = 0; i < args.nPSF; i++) {
+    cl_double p0 = 0.0;
+    for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+      for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+        int k = x + args.hSStampWidth +
+                (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+        int imgIndex =
+            x + s.coords.first + (y + s.coords.second) * s.size.first;
+        p0 += s.W[i][k] * img[imgIndex];
+      }
+    }
+    s.B.push_back(p0);
+  }
+
+  cl_double q = 0.0;
+  for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+    for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+      int k = x + args.hSStampWidth +
+              (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+      int imgIndex = x + s.coords.first + (y + s.coords.second) * s.size.first;
+      q += s.W[args.nPSF][k] * img[imgIndex];
+    }
+  }
+  s.B.back() = q;
+}
+
+inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
+  /*
+   * Fills a Stamp with a convolved version (using only gaussian basis functions
+   * without amlitude) of the area around its selected substamp.
+   *
+   * This can result in nan values but which should be handeld later.
+   */
+
+  if(args.verbose) std::cout << "Convolving stamp..." << std::endl;
+
+  s.W.emplace_back();
+  cl_long ssx = s.subStamps[0].imageCoords.first;
+  cl_long ssy = s.subStamps[0].imageCoords.second;
+
+  std::vector<cl_double> tmp{};
+
+  // Convolve Image with filterY taking pixels in a (args.hSStampWidth +
+  // args.hKernelWidth) area around a substamp.
+  for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
+      i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
+    for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
+      tmp.push_back(0.0);
+
+      for(int y = 1 - args.hKernelWidth; y <= args.hKernelWidth; y++) {
+        int imgIndex = i + (j + y) * img.axis.first;
+        tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+      }
+    }
+  }
+
+  // Convolve Image with filterX, image data already there.
+  for(int j = -args.hSStampWidth; j < args.hSStampWidth; j++) {
+    for(int i = -args.hSStampWidth; i < args.hSStampWidth; i++) {
+      int index =
+          i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
+      s.W[n].push_back(0.0);
+      for(int x = 1 - args.hKernelWidth; x <= args.hKernelWidth; x++) {
+        s.W.back().back() += tmp[index] * k.filterX[n][args.hKernelWidth - x];
+      }
+    }
+  }
+
+  // Removes n = 0 vector from all odd vectors in s.W
+  // TODO: Find out why this is done.....
+  if(odd) {
+    for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++)
+      s.W[n][i] -= s.W[0][i];
+  }
+}
+
+inline void cutSStamp(SubStamp& ss, Image& img) {
+  /* Store the original image data around the substamp in said substamp */
+  if(args.verbose) std::cout << "Cutting substamp..." << std::endl;
+
+  for(int y = 0; y < args.fSStampWidth; y++) {
+    int imgY = ss.imageCoords.second + y - args.hSStampWidth;
+
+    for(int x = 0; x < args.fSStampWidth; x++) {
+      int imgX = ss.imageCoords.first + x - args.hSStampWidth;
+
+      ss.data.push_back(img[imgX + imgY * img.axis.first]);
+      ss.sum += img.masked(imgX, imgY, Image::badInput) ||
+                        img.masked(imgX, imgY, Image::nan)
+                    ? 0.0
+                    : abs(img[imgX + imgY * img.axis.first]);
+    }
+  }
+}
+
+inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
+  /* Fills Substamp with gaussian basis convolved images around said substamp
+   * and claculates CMV.
+   */
+  if(args.verbose) std::cout << "Filling stamp..." << std::endl;
+  if(s.subStamps.empty()) {
+    if(args.verbose)
+      std::cout << "No eligable substamps, stamp rejected" << std::endl;
+    return;
+  }
+
+  int nvec = 0;
+  for(int g = 0; g < cl_int(args.dg.size()); g++) {
+    for(int x = 0; x <= args.dg[g]; x++) {
+      for(int y = 0; y <= args.dg[g] - x; y++) {
+        int odd = 0;
+
+        cl_double dx = (x / 2.0) * 2 - x;
+        cl_double dy = (y / 2.0) * 2 - y;
+        if(dx == 0 && dy == 0 && nvec > 0) odd = 1;
+
+        convStamp(s, tImg, k, nvec, odd);
+        if(args.verbose) std::cout << "Stamp convolved" << std::endl;
+        nvec++;
+      }
+    }
+  }
+
+  cutSStamp(s.subStamps[0], sImg);
+
+  cl_long ssx = s.subStamps[0].imageCoords.first;
+  cl_long ssy = s.subStamps[0].imageCoords.second;
+
+  for(int j = 0; j <= args.backgroundOrder; j++) {
+    for(int k = 0; k <= args.backgroundOrder - j; k++) {
+      s.W.emplace_back();
+    }
+  }
+
+  for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
+    for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
+      cl_double ax = 1.0;
+      cl_int nBGVec = 0;
+      for(int j = 0; j <= args.backgroundOrder; j++) {
+        cl_double ay = 1.0;
+        for(int k = 0; k <= args.backgroundOrder - j; k++) {
+          s.W[args.nPSF + nBGVec++].push_back(ax * ay);
+          ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
+        }
+        ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
+      }
+    }
+  }
+
+  s.createQ();  // TODO: is name accurate?
+  createB(s, sImg);
 }
 
 #endif

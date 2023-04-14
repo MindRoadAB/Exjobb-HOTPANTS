@@ -54,49 +54,60 @@ int main(int argc, char* argv[]) {
 
   std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
-  if(args.verbose)
-    std::cout << "Stamps created for " << templateImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Stamps created for " << templateImg.name << std::endl;
+  }
 
   std::vector<Stamp> sciStamps{};
   createStamps(scienceImg, sciStamps, w, h);
-  if(args.verbose)
-    std::cout << "Stamps created for " << scienceImg.name << std::endl
-              << std::endl;
-
-  identifySStamps(templateStamps, templateImg);
-  int hasSStamps = 0;
-  for(auto s : templateStamps) {
-    if(s.subStamps.empty()) hasSStamps++;
+  if(args.verbose) {
+    std::cout << "Stamps created for " << scienceImg.name << std::endl;
   }
-  if(hasSStamps / templateStamps.size() < 0.1) {
+
+  /* == Check Template Stamps  ==*/
+  int numTemplSStamps = identifySStamps(templateStamps, templateImg);
+  if(cl_double(numTemplSStamps) / templateStamps.size() < 0.1) {
     if(args.verbose)
       std::cout << "Not enough substamps found in " << templateImg.name
                 << " trying again with lower thresholds..." << std::endl;
     args.threshLow *= 0.5;
-    identifySStamps(templateStamps, templateImg);
+    numTemplSStamps = identifySStamps(templateStamps, templateImg);
     args.threshLow /= 0.5;
   }
-  if(args.verbose)
-    std::cout << "Substamps found in " << templateImg.name << std::endl
-              << std::endl;
-
-  identifySStamps(sciStamps, scienceImg);
-  hasSStamps = 0;
-  for(auto s : sciStamps) {
-    if(s.subStamps.empty()) hasSStamps++;
+  if(args.verbose) {
+    std::cout << "Substamps found in " << templateImg.name << std::endl;
   }
-  if(hasSStamps / sciStamps.size() < 0.1) {
-    if(args.verbose)
+
+  /* == Check Science Stamps  ==*/
+  int numSciSStamps = identifySStamps(sciStamps, scienceImg);
+  if(cl_double(numSciSStamps) / sciStamps.size() < 0.1) {
+    if(args.verbose) {
       std::cout << "Not enough substamps found in " << scienceImg.name
                 << " trying again with lower thresholds..." << std::endl;
+    }
     args.threshLow *= 0.5;
-    identifySStamps(sciStamps, scienceImg);
+    numSciSStamps = identifySStamps(sciStamps, scienceImg);
     args.threshLow /= 0.5;
   }
-  if(args.verbose)
-    std::cout << "Substamps found in " << scienceImg.name << std::endl
-              << std::endl;
+  if(args.verbose) {
+    std::cout << "Substamps found in " << scienceImg.name << std::endl;
+  }
+
+  if(numTemplSStamps == 0 && numSciSStamps == 0) {
+    std::cout << "No substamps found" << std::endl;
+    exit(1);
+  }
+
+  /* ===== CMV ===== */
+
+  if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
+  Kernel convolutionKernel{};
+  for(auto s : templateStamps) {
+    fillStamp(s, templateImg, scienceImg, convolutionKernel);
+  }
+  for(auto s : sciStamps) {
+    fillStamp(s, scienceImg, templateImg, convolutionKernel);
+  }
 
   /* ===== Conv ===== */
 

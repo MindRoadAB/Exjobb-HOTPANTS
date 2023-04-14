@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 struct Arguments {
   std::string templateName;
@@ -27,7 +28,22 @@ struct Arguments {
   cl_double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
+
+  cl_int nPSF = 49;  // nPSF
+
   cl_int hSStampWidth = 15;  // half substamp width
+  cl_int fSStampWidth = 30;  // full substamp width
+  cl_int hKernelWidth = 10;  // half kernel width
+  cl_int fKernelWidth = 20;  // full kernel width
+
+  cl_int backgroundOrder = 1;
+
+  std::vector<cl_int> dg = {6, 4, 2};  // ngauss = length of dg
+  std::vector<cl_double> bg = {
+      (1.0 / (2.0 * 0.7 * 0.7)),
+      (1.0 / (2.0 * 1.5 * 1.5)),
+      (1.0 / (2.0 * 3.0 * 3.0)),
+  };
 
   bool verbose = false;
 };
