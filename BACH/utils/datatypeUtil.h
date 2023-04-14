@@ -118,11 +118,6 @@ struct SubStamp {
   bool operator>(const SubStamp& other) const { return val > other.val; }
 
   cl_double& operator[](size_t index) { return data[index]; }
-
-  void init() {
-    data =
-        std::vector<cl_double>(args.fSStampWidth * args.fSStampWidth, 1.e-30);
-  }
 };
 
 struct StampStats {
@@ -182,7 +177,8 @@ struct Stamp {
 
   cl_double pixels() { return size.first * size.second; }
 
-  inline void createQ() {  // see Equation 2.12
+  inline void createQ() {
+    /* Does Equation 2.12 which create the left side of the Equation Ma=B */
     if(args.verbose) std::cout << "Creating Q?..." << std::endl;
 
     Q.emplace_back();
