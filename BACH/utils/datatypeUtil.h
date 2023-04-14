@@ -184,27 +184,40 @@ struct Stamp {
 
   inline void createQ() {  // see Equation 2.12
     if(args.verbose) std::cout << "Creating Q?..." << std::endl;
-    for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+
+    // Q = std::vector<std::vector<cl_double>>(
+    //     args.tmp_num_kernel_components + 1,
+    //     std::vector<cl_double>(args.tmp_num_kernel_components + 1, 0.0));
+
+    Q.emplace_back();
+    for(int i = 0; i < args.nPSF; i++) {
+      Q.emplace_back();
       for(int j = 0; j <= i; j++) {
+        Q.back().emplace_back();
         cl_double q = 0.0;
-        for(int k = 0; k < pixels(); k++) q += W[i][k] + W[j][k];
-        Q[i + 1][j + 1] = q;
+        for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
+          q += W[i][k] + W[j][k];
+          if(std::isnan(q)) {
+            std::cout << "WTF" << std::endl;
+          }
+        }
+        Q.back().push_back(q);
       }
     }
 
-    for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+    Q.emplace_back();
+    for(int i = 0; i < args.nPSF; i++) {
       cl_double p0 = 0.0;
-      for(int k = 0; k < pixels(); k++)
-        p0 += W[i][k] * W[args.tmp_num_kernel_components][k];
-      Q[args.tmp_num_kernel_components + 1][i + 1] = p0;
+      for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
+        p0 += W[i][k] * W[args.nPSF][k];
+      }
+      Q.back().push_back(p0);
     }
 
     cl_double q = 0.0;
-    for(int k = 0; k < pixels(); k++)
-      q += W[args.tmp_num_kernel_components][k] *
-           W[args.tmp_num_kernel_components][k];
-    Q[args.tmp_num_kernel_components + 1][args.tmp_num_kernel_components + 1] =
-        q;
+    for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++)
+      q += W[args.nPSF][k] * W[args.nPSF][k];
+    Q[args.nPSF + 1][args.nPSF + 1] = q;
   }
 };
 

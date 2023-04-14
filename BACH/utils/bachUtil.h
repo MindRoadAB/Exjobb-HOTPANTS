@@ -455,7 +455,9 @@ inline int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
 // TODO: can this live in the stamp struct?
 inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
   if(args.verbose) std::cout << "Creating B..." << std::endl;
-  for(int i = 0; i < args.tmp_num_kernel_components; i++) {
+
+  s.B.emplace_back();
+  for(int i = 0; i < args.nPSF; i++) {
     cl_double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
       for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
@@ -466,7 +468,7 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
         p0 += s.W[i][k] * img[imgIndex];
       }
     }
-    s.B[i + 1] = p0;
+    s.B.push_back(p0);
   }
 
   cl_double q = 0.0;
@@ -475,10 +477,10 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
       int k = x + args.hSStampWidth +
               (args.hSStampWidth * 2) * (y + args.hSStampWidth);
       int imgIndex = x + s.coords.first + (y + s.coords.second) * s.size.first;
-      q += s.W[args.tmp_num_kernel_components][k] * img[imgIndex];
+      q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
-  s.B[args.tmp_num_kernel_components + 1] = q;
+  s.B.back() = q;
 }
 
 inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
@@ -490,29 +492,25 @@ inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
   std::vector<cl_double> tmp{};
 
-  int totWidth = args.fSStampWidth + args.fKernelWidth - 1;
   for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
       i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
     for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
-      int index =
-          i - ssx + totWidth / 2 + totWidth * (j - ssy + args.hSStampWidth);
       tmp.push_back(0.0);
-      if(index != tmp.size() - 1)
-        for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
-          int imgIndex = i + (j + y) * img.axis.first;
-          tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
-        }
+
+      for(int y = 1 - args.hKernelWidth; y <= args.hKernelWidth; y++) {
+        int imgIndex = i + (j + y) * img.axis.first;
+        tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+      }
     }
   }
 
-  for(int j = -args.hSStampWidth; j <= args.hSStampWidth; j++) {
-    for(int i = -args.hSStampWidth; i <= args.hSStampWidth; i++) {
+  for(int j = -args.hSStampWidth; j < args.hSStampWidth; j++) {
+    for(int i = -args.hSStampWidth; i < args.hSStampWidth; i++) {
       int index =
           i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
       s.W[n].push_back(0.0);
-      for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
-        int imgIndex = i + (j + x) * img.axis.first;
-        s.W[n][index] += tmp[index] * k.filterX[n][args.hKernelWidth - x];
+      for(int x = 1 - args.hKernelWidth; x <= args.hKernelWidth; x++) {
+        s.W.back()[index] += tmp[index] * k.filterX[n][args.hKernelWidth - x];
       }
     }
   }
@@ -531,9 +529,8 @@ inline void cutSStamp(SubStamp& ss, Image& img) {
   for(int y = 0; y < args.fSStampWidth; y++) {
     int imgY = ssy + y - args.hSStampWidth;
     for(int x = 0; x < args.fSStampWidth; x++) {
-      std::cout << "i";
       int imgX = ssx + x - args.hSStampWidth;
-      if(ss.data.size() - 1 < x + y * args.fSStampWidth) std::cout << "ohno";
+
       ss[x + y * args.fSStampWidth] = img[imgX + imgY * img.axis.first];
       ss.sum += img.masked(imgX, imgY, Image::badInput) ||
                         img.masked(imgX, imgY, Image::nan)
@@ -552,17 +549,17 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   int nvec = 0;
-  for(int g = 0; g < args.dg.size(); g++) {
+  for(int g = 0; g < cl_int(args.dg.size()); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
         int odd = 0;
 
-        cl_double dx = (x / 2) * 2 - x;
-        cl_double dy = (y / 2) * 2 - y;
+        cl_double dx = (x / 2.0) * 2 - x;
+        cl_double dy = (y / 2.0) * 2 - y;
         if(dx == 0 && dy == 0 && nvec > 0) odd = 1;
 
         convStamp(s, tImg, k, nvec, odd);
-        std::cout << "Stamp convolved" << std::endl;
+        if(args.verbose) std::cout << "Stamp convolved" << std::endl;
         nvec++;
       }
     }
@@ -571,24 +568,45 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   cutSStamp(s.subStamps[0], sImg);
   std::cout << "get cut" << std::endl;
 
+  // s.WBG = std::vector<std::vector<cl_double>>(
+  //     (args.backgroundOrder + 1) * (args.backgroundOrder + 2) / 2,
+  //     std::vector<cl_double>(args.hSStampWidth * args.hSStampWidth, 0.0));
+
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
-  for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
-    for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
-      cl_double ax = 1.0;
-      int n = nvec;
-      for(int j = 0; j <= args.backgroundOrder; j++) {
-        cl_double ay = 1.0;
-        for(int k = 0; k <= args.backgroundOrder - j; k++) {
-          s.W[n++][x - (ssx - args.hSStampWidth) +
-                   (y - (ssy - args.hSStampWidth)) * args.fSStampWidth] =
-              ax * ay;
+
+  for(int j = 0; j <= args.backgroundOrder; j++) {
+    cl_double ax = 1.0;
+    for(int k = 0; k <= args.backgroundOrder - j; k++) {
+      cl_double ay = 1.0;
+      s.W.emplace_back();
+      for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
+        for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
+          s.W.back().push_back(ax * ay);
           ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
         }
         ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
       }
     }
   }
+
+  // cl_long ssx = s.subStamps[0].imageCoords.first;
+  // cl_long ssy = s.subStamps[0].imageCoords.second;
+  // for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
+  //   for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
+  //     cl_double ax = 1.0;
+  //     for(int j = 0; j <= args.backgroundOrder; j++) {
+  //       cl_double ay = 1.0;
+  //       for(int k = 0; k <= args.backgroundOrder - j; k++) {
+  //         s.W.emplace_back();
+  //         s.W.back().push_back(ax * ay);
+  //         ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
+  //       }
+  //       ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
+  //     }
+  //   }
+  // }
+  std::cout << "After BG" << std::endl;
 
   s.createQ();  // TODO: is name accurate?
   createB(s, sImg);
