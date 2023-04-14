@@ -484,6 +484,13 @@ inline void createB(Stamp& s, Image& img) {  // see Equation 2.13
 }
 
 inline void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
+  /*
+   * Fills a Stamp with a convolved version (using only gaussian basis functions
+   * without amlitude) of the area around its selected substamp.
+   *
+   * This can result in nan values but which should be handeld later.
+   */
+
   if(args.verbose) std::cout << "Convolving stamp..." << std::endl;
 
   s.W.emplace_back();
@@ -566,11 +573,6 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   cutSStamp(s.subStamps[0], sImg);
-  std::cout << "get cut" << std::endl;
-
-  // s.WBG = std::vector<std::vector<cl_double>>(
-  //     (args.backgroundOrder + 1) * (args.backgroundOrder + 2) / 2,
-  //     std::vector<cl_double>(args.hSStampWidth * args.hSStampWidth, 0.0));
 
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
@@ -589,24 +591,6 @@ inline void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       }
     }
   }
-
-  // cl_long ssx = s.subStamps[0].imageCoords.first;
-  // cl_long ssy = s.subStamps[0].imageCoords.second;
-  // for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
-  //   for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
-  //     cl_double ax = 1.0;
-  //     for(int j = 0; j <= args.backgroundOrder; j++) {
-  //       cl_double ay = 1.0;
-  //       for(int k = 0; k <= args.backgroundOrder - j; k++) {
-  //         s.W.emplace_back();
-  //         s.W.back().push_back(ax * ay);
-  //         ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
-  //       }
-  //       ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
-  //     }
-  //   }
-  // }
-  std::cout << "After BG" << std::endl;
 
   s.createQ();  // TODO: is name accurate?
   createB(s, sImg);
