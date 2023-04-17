@@ -270,3 +270,96 @@ void calcStats(Stamp& stamp, Image& image) {
   lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
 }
+
+void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+            std::vector<int>& index, cl_double& rowInter) {
+  std::vector<cl_double> vv(matrixSize + 1, 0.0);
+  int maxI{};
+  cl_double temp2{};
+
+  rowInter = 0.0;
+
+  // Calculate vv
+  for(int i = 1; i <= int(matrixSize); i++) {
+    double big = 0.0;
+    for(int j = 1; j <= int(matrixSize); j++) {
+      temp2 = abs(matrix[i][j]);
+      big = temp2 > big ? temp2 : big;
+    }
+    if(big == 0.0) {
+      std::cout << " Numerical Recipies run error" << std::endl;
+      return;
+    }
+    vv[i] = 1.0 / big;
+  }
+
+  // Do the rest
+  for(int j = 1; j <= int(matrixSize); j++) {
+    for(int i = 1; i < j; i++) {
+      double sum = matrix[i][j];
+      for(int k = 1; k < i; k++) {
+        sum -= matrix[i][k] * matrix[k][j];
+      }
+      matrix[i][j] = sum;
+    }
+    double big = 0.0;
+    for(int i = j; i <= int(matrixSize); i++) {
+      double sum = matrix[i][j];
+      for(int k = 1; k < j; k++) {
+        sum -= matrix[i][k] * matrix[k][j];
+      }
+      matrix[i][j] = sum;
+      double dum = vv[i] * abs(sum);
+      if(dum >= big) {
+        big = dum;
+        maxI = i;
+      }
+    }
+    if(j != maxI) {
+      for(int k = 1; k <= int(matrixSize); k++) {
+        double dum = matrix[maxI][k];
+        matrix[maxI][k] = matrix[j][k];
+        matrix[j][k] = dum;
+      }
+      rowInter = -rowInter;
+      vv[maxI] = vv[j];
+    }
+    index[j] = maxI;
+    matrix[j][j] = matrix[j][j] == 0.0 ? 1.0e-20 : matrix[j][j];
+    if(j != int(matrixSize)) {
+      double dum = 1.0 / matrix[j][j];
+      for(int i = j + 1; i < int(matrixSize); i++) {
+        matrix[i][j] *= dum;
+      }
+    }
+  }
+
+  return;
+}
+
+void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+            std::vector<int>& index, std::vector<cl_double>& result) {
+  int ii{};
+
+  for(int i = 1; i <= int(matrixSize); i++) {
+    int ip = index[i];
+    double sum = result[ip];
+    result[ip] = result[i];
+    if(ii) {
+      for(int j = ii; j <= i; j++) {
+        sum -= matrix[i][j] * result[j];
+      }
+    } else if(sum) {
+      ii = i;
+    }
+    result[i] = sum;
+  }
+
+  for(int i = matrixSize; i >= 1; i--) {
+    double sum = result[i];
+    for(int j = i + 1; j <= int(matrixSize); j++) {
+      sum -= matrix[i][j] * result[j];
+      result[i] = sum / matrix[i][i];
+    }
+  }
+}

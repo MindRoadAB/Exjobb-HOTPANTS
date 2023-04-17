@@ -20,6 +20,13 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
 bool inImage(Image& image, int x, int y);
 void calcStats(Stamp& stamp, Image& image);
 
+void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+            std::vector<int>& index, cl_double& rowInter);
+void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+            std::vector<int>& index, std::vector<cl_double>& result);
+
+void makeKernel(Kernel&, int x, int y);
+
 /* SSS */
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
 double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp);
@@ -32,14 +39,9 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd);
 void cutSStamp(SubStamp& ss, Image& img);
 void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
 
-/* CD */
+/* CD && KSC */
 void calcMerit(std::vector<Stamp>& s, Image& img);
-void makeKernel(Kernel&, int x, int y);
 std::vector<std::vector<cl_double>>&& createM(std::vector<Stamp>& s);
 std::vector<cl_double>&& createFitSolution(std::vector<Stamp>& s, Image& img);
-void ludcmp(std::vector<std::vector<cl_double>>& matrix,
-            std::vector<int>& index, std::vector<cl_double>& rowInter);
-void ludskb(std::vector<std::vector<cl_double>>& matrix,
-            std::vector<int>& index, std::vector<cl_double>& rowInter);
 
 #endif

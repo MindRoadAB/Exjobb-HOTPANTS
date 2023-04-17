@@ -102,14 +102,29 @@ int main(int argc, char* argv[]) {
 
   if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
-  for(auto s : templateStamps) {
+  for(auto& s : templateStamps) {
     fillStamp(s, templateImg, scienceImg, convolutionKernel);
   }
-  for(auto s : sciStamps) {
+  for(auto& s : sciStamps) {
     fillStamp(s, scienceImg, templateImg, convolutionKernel);
   }
 
+  /* ===== CD ===== */
+
+  std::cout << "Choosing Convolution Direction" << std::endl;
+  std::vector<int> index(templateStamps[1].Q.size());
+  double d;
+  std::vector<std::vector<cl_double>> input = {{0.0, 0.0, 0.0, 0.0},
+                                               {0.0, 3.123, 5.1, 23.5},
+                                               {0.0, 22.5, 50.5, 30.0},
+                                               {0.0, 33.0, 34.23, 20.0}};
+  std::vector<cl_double> output = {0.0, 2.0, 3.0, 4.0};
+
+  ludcmp(input, 3, index, d);
+  lubksb(input, 3, index, output);
+
   /* ===== Conv ===== */
+  std::cout << "Doing Convolution" << std::endl;
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);

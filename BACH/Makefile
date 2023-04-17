@@ -11,20 +11,20 @@ CC    = g++
 all: $(BIN)
 	$(CC) $(COPTS) $(LIBS) -o BACH $(BIN)
 
+debug: $(BIN)
+	$(CC) $(COPTS) -g $(LIBS) -o BACH $(BIN)
+
 main.o: main.cpp
-	$(CC) $(COPTS) $(LIBS) -c main.cpp
+	$(CC) $(COPTS) -g $(LIBS) -c main.cpp
 
 bachUtil.o: bachUtil.cpp
-	$(CC) $(COPTS) $(LIBS) -c bachUtil.cpp
+	$(CC) $(COPTS) -g $(LIBS) -c bachUtil.cpp
 
 sssUtil.o: sssUtil.cpp
-	$(CC) $(COPTS) $(LIBS) -c sssUtil.cpp
+	$(CC) $(COPTS) -g $(LIBS) -c sssUtil.cpp
 
 cmvUtil.o: cmvUtil.o
-	$(CC) $(COPTS) $(LIBS) -c cmvUtil.cpp
-
-debug:
-	$(CC) main.cpp -o BACH $(LIBS) -g $(COPTS)
+	$(CC) $(COPTS) -g $(LIBS) -c cmvUtil.cpp
 
 clean:
 	rm *.o
