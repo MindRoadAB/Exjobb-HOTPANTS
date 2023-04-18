@@ -94,8 +94,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
       int imgX = ss.imageCoords.first + x - args.hSStampWidth;
 
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
-      ss.sum += img.masked(imgX, imgY, Image::badInput) ||
-                        img.masked(imgX, imgY, Image::nan)
+      ss.sum += img.masked(imgX, imgY, Image::badInput, Image::nan)
                     ? 0.0
                     : abs(img[imgX + imgY * img.axis.first]);
     }

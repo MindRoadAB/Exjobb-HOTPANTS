@@ -122,8 +122,7 @@ void calcStats(Stamp& stamp, Image& image) {
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
 
-    if(image.masked(xI, yI, Image::badInput) ||
-       image.masked(xI, yI, Image::nan) || stamp[indexS] < 0) {
+    if(image.masked(xI, yI, Image::badInput, Image::nan) || stamp[indexS] < 0) {
       continue;
     }
 
@@ -152,8 +151,8 @@ void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(!image.masked(xI, yI, Image::badInput) &&
-         !image.masked(xI, yI, Image::nan) && stamp[indexS] >= 0) {
+      if(!image.masked(xI, yI, Image::badInput, Image::nan) &&
+         stamp[indexS] >= 0) {
         maskedStamp.push_back(stamp[indexS]);
       }
     }
@@ -189,8 +188,8 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::badInput) ||
-           image.masked(xI, yI, Image::nan) || stamp[indexS] < 0) {
+        if(image.masked(xI, yI, Image::badInput, Image::nan) ||
+           stamp[indexS] < 0) {
           continue;
         }
 

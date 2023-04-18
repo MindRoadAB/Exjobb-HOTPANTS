@@ -4,6 +4,7 @@
 #include <CL/opencl.h>
 
 #include <cmath>
+#include <concepts>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -321,27 +322,34 @@ struct Image {
     return ptr;
   }
 
-  bool masked(int x, int y, masks m) {
-    switch(m) {
-      case nan:
-        return nanMask[x + (y * axis.first)];
-        break;
-      case badInput:
-        return badInputMask[x + (y * axis.first)];
-        break;
-      case badPixel:
-        return badPixelMask[x + (y * axis.first)];
-        break;
-      case psf:
-        return psfMask[x + (y * axis.first)];
-        break;
-      case edge:
-        return edgeMask[x + (y * axis.first)];
-        break;
-      default:
-        std::cout << "Error: Not caught by the switch case" << std::endl;
-        exit(1);
+  bool masked(int x, int y, std::same_as<Image::masks> auto... mI) {
+    std::vector<Image::masks> mL{mI...};
+    bool retVal = false;
+
+    for(Image::masks m : mL) {
+      switch(m) {
+        case nan:
+          retVal |= nanMask[x + (y * axis.first)];
+          break;
+        case badInput:
+          retVal |= badInputMask[x + (y * axis.first)];
+          break;
+        case badPixel:
+          retVal |= badPixelMask[x + (y * axis.first)];
+          break;
+        case psf:
+          retVal |= psfMask[x + (y * axis.first)];
+          break;
+        case edge:
+          retVal |= edgeMask[x + (y * axis.first)];
+          break;
+        default:
+          std::cout << "Error: Not caught by the switch case" << std::endl;
+          exit(1);
+      }
     }
+
+    return retVal;
   }
 
   void maskPix(int x, int y, masks m) {
