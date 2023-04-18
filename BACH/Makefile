@@ -1,31 +1,30 @@
-COPTS = -std=c++20 -pedantic -Wall -Wextra -fcommon
-LIBS  = -lCCfits -lcfitsio -lOpenCL
+# compiler
+CXX    = g++
+
+CXXFLAGS = -std=c++20 -pedantic -Wall -Wextra -fcommon
+LOADLIBES  = -lCCfits -lcfitsio -lOpenCL
 
 FILES =  main.cpp bachUtil.cpp
 BIN =   main.o bachUtil.o sssUtil.o cmvUtil.o
 
-
-# compiler
-CC    = g++
-
 all: $(BIN)
-	$(CC) $(COPTS) $(LIBS) -o BACH $(BIN)
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -o BACH $(BIN)
 
 debug: $(BIN)
-	$(CC) $(COPTS) -g $(LIBS) -o BACH $(BIN)
+	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -o BACH $(BIN)
 
 main.o: main.cpp
-	$(CC) $(COPTS) -g $(LIBS) -c main.cpp
+	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c main.cpp
 
 bachUtil.o: bachUtil.cpp
-	$(CC) $(COPTS) -g $(LIBS) -c bachUtil.cpp
+	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c bachUtil.cpp
 
 sssUtil.o: sssUtil.cpp
-	$(CC) $(COPTS) -g $(LIBS) -c sssUtil.cpp
+	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c sssUtil.cpp
 
-cmvUtil.o: cmvUtil.o
-	$(CC) $(COPTS) -g $(LIBS) -c cmvUtil.cpp
+cmvUtil.o: cmvUtil.cpp
+	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c cmvUtil.cpp
 
+.PHONY: clean
 clean:
-	rm *.o
-	rm BACH
+	rm *.o BACH
