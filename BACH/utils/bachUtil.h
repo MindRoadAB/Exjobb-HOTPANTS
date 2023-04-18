@@ -86,8 +86,7 @@ inline double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
       if(x < 0 || x >= image.axis.first) continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y, Image::badPixel) || image.masked(x, y, Image::psf))
-        return 0.0;
+      if(image.masked(x, y, Image::badPixel, Image::psf)) return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
         image.maskPix(x, y, Image::badPixel);
@@ -116,9 +115,7 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         absy = y + stamp.coords.second;
         coords = x + (y * stamp.size.first);
 
-        if(image.masked(absx, absy, Image::badPixel) ||
-           image.masked(absx, absy, Image::psf) ||
-           image.masked(absx, absy, Image::edge)) {
+        if(image.masked(absx, absy, Image::badPixel, Image::psf, Image::edge)) {
           continue;
         }
 
@@ -152,9 +149,8 @@ inline cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                 continue;
               }
 
-              if(image.masked(kx, ky, Image::badPixel) ||
-                 image.masked(kx, ky, Image::psf) ||
-                 image.masked(kx, ky, Image::edge)) {
+              if(image.masked(kx, ky, Image::badPixel, Image::psf,
+                              Image::edge)) {
                 continue;
               }
 
@@ -290,8 +286,7 @@ inline void calcStats(Stamp& stamp, Image& image) {
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
 
-    if(image.masked(xI, yI, Image::badInput) ||
-       image.masked(xI, yI, Image::nan) || stamp[indexS] < 0) {
+    if(image.masked(xI, yI, Image::badInput, Image::nan) || stamp[indexS] < 0) {
       continue;
     }
 
@@ -320,8 +315,8 @@ inline void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(!image.masked(xI, yI, Image::badInput) &&
-         !image.masked(xI, yI, Image::nan) && stamp[indexS] >= 0) {
+      if(!image.masked(xI, yI, Image::badInput, Image::nan) &&
+         stamp[indexS] >= 0) {
         maskedStamp.push_back(stamp[indexS]);
       }
     }
@@ -357,8 +352,8 @@ inline void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::badInput) ||
-           image.masked(xI, yI, Image::nan) || stamp[indexS] < 0) {
+        if(image.masked(xI, yI, Image::badInput, Image::nan) ||
+           stamp[indexS] < 0) {
           continue;
         }
 
@@ -544,8 +539,7 @@ inline void cutSStamp(SubStamp& ss, Image& img) {
       int imgX = ss.imageCoords.first + x - args.hSStampWidth;
 
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
-      ss.sum += img.masked(imgX, imgY, Image::badInput) ||
-                        img.masked(imgX, imgY, Image::nan)
+      ss.sum += img.masked(imgX, imgY, Image::badInput, Image::nan)
                     ? 0.0
                     : abs(img[imgX + imgY * img.axis.first]);
     }
