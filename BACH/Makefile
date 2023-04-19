@@ -1,30 +1,32 @@
 # compiler
 CXX    = g++
 
-CXXFLAGS = -std=c++20 -pedantic -Wall -Wextra -fcommon
+CXXFLAGS = -std=c++20 -pedantic -Wall -Wextra -fcommon -O3
 LOADLIBES  = -lCCfits -lcfitsio -lOpenCL
 
-FILES =  main.cpp bachUtil.cpp
 BIN =   main.o bachUtil.o sssUtil.o cmvUtil.o
 
 all: $(BIN)
 	$(CXX) $(CXXFLAGS) $(LOADLIBES) -o BACH $(BIN)
+	rm -f *.o
 
-debug: $(BIN)
-	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -o BACH $(BIN)
+debug: override CXXFLAGS = -std=c++20 -pedantic -Wall -Wextra -fcommon -g3
+debug:	$(BIN)
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -o BACH $(BIN)
+
 
 main.o: main.cpp
-	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c main.cpp
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c main.cpp
 
 bachUtil.o: bachUtil.cpp
-	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c bachUtil.cpp
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c bachUtil.cpp
 
 sssUtil.o: sssUtil.cpp
-	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c sssUtil.cpp
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c sssUtil.cpp
 
 cmvUtil.o: cmvUtil.cpp
-	$(CXX) $(CXXFLAGS) -g $(LOADLIBES) -c cmvUtil.cpp
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c cmvUtil.cpp
 
 .PHONY: clean
 clean:
-	rm *.o BACH
+	rm -f *.o BACH
