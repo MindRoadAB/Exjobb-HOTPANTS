@@ -30,7 +30,7 @@ void createB(Stamp& s, Image& img) {
       q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
-  s.B.back() = q;
+  s.B.push_back(q);
 }
 
 void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {

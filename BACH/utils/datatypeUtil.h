@@ -178,30 +178,28 @@ struct Stamp {
 
   cl_double pixels() { return size.first * size.second; }
 
-  inline void createQ() {
+  void createQ() {
     /* Does Equation 2.12 which create the left side of the Equation Ma=B */
     if(args.verbose) std::cout << "Creating Q?..." << std::endl;
+    Q = std::vector<std::vector<cl_double>>(
+        args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
 
-    Q.emplace_back();
     for(int i = 0; i < args.nPSF; i++) {
-      Q.emplace_back();
       for(int j = 0; j <= i; j++) {
-        Q.back().emplace_back();
         cl_double q = 0.0;
         for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
           q += W[i][k] + W[j][k];
         }
-        Q.back().push_back(q);
+        Q[i + 1][j + 1] = q;
       }
     }
 
-    Q.emplace_back();
     for(int i = 0; i < args.nPSF; i++) {
       cl_double p0 = 0.0;
       for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
         p0 += W[i][k] * W[args.nPSF][k];
       }
-      Q.back().push_back(p0);
+      Q[args.nPSF + 1][i + 1] = p0;
     }
 
     cl_double q = 0.0;
