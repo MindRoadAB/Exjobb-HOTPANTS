@@ -7,14 +7,16 @@ void createB(Stamp& s, Image& img) {
   if(args.verbose) std::cout << "Creating B..." << std::endl;
 
   s.B.emplace_back();
+  int ssx = s.subStamps[0].imageCoords.first;
+  int ssy = s.subStamps[0].imageCoords.second;
+
   for(int i = 0; i < args.nPSF; i++) {
     cl_double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
       for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
         int k = x + args.hSStampWidth +
                 (args.hSStampWidth * 2) * (y + args.hSStampWidth);
-        int imgIndex =
-            x + s.coords.first + (y + s.coords.second) * s.size.first;
+        int imgIndex = x + ssx + (y + ssy) * img.axis.first;
         p0 += s.W[i][k] * img[imgIndex];
       }
     }
@@ -26,7 +28,7 @@ void createB(Stamp& s, Image& img) {
     for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
       int k = x + args.hSStampWidth +
               (args.hSStampWidth * 2) * (y + args.hSStampWidth);
-      int imgIndex = x + s.coords.first + (y + s.coords.second) * s.size.first;
+      int imgIndex = x + ssx + (y + ssy) * img.axis.first;
       q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
