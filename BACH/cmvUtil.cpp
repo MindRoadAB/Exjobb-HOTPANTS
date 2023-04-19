@@ -58,7 +58,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
     for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
       tmp.push_back(0.0);
 
-      for(int y = 1 - args.hKernelWidth; y <= args.hKernelWidth; y++) {
+      for(int y = args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
         tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
       }
@@ -71,7 +71,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       int index =
           i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
       s.W[n].push_back(0.0);
-      for(int x = 1 - args.hKernelWidth; x <= args.hKernelWidth; x++) {
+      for(int x = args.hKernelWidth; x <= args.hKernelWidth; x++) {
         s.W.back().back() += tmp[index] * k.filterX[n][args.hKernelWidth - x];
       }
     }
