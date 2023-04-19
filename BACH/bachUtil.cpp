@@ -327,7 +327,7 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
     matrix[j][j] = matrix[j][j] == 0.0 ? 1.0e-20 : matrix[j][j];
     if(j != int(matrixSize)) {
       double dum = 1.0 / matrix[j][j];
-      for(int i = j + 1; i < int(matrixSize); i++) {
+      for(int i = j + 1; i <= int(matrixSize); i++) {
         matrix[i][j] *= dum;
       }
     }
