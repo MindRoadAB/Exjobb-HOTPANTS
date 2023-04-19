@@ -91,10 +91,15 @@ set(Header_Files
     "utils/argsUtil.h"
     "utils/clUtil.h"
     "utils/fitsUtil.h"
+    "utils/bachUtil.h"
+    "utils/datatypeUtil.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
+    "bachUtil.cpp"
+    "cmvUtil.cpp"
+    "sssUtil.cpp"
     "main.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
