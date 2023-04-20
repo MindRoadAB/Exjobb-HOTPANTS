@@ -35,6 +35,9 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
         stamph = stopy - starty;
       }
 
+      int centerx = stampw / 2;
+      int centery = stamph / 2;
+
       Stamp tmpS{};
       for(int y = 0; y < stamph; y++) {
         for(int x = 0; x < stampw; x++) {
@@ -45,6 +48,7 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
 
       tmpS.coords = std::make_pair(startx, starty);
       tmpS.size = std::make_pair(stampw, stamph);
+      tmpS.center = std::make_pair(centerx, centery);
       stamps.push_back(tmpS);
     }
   }
@@ -83,9 +87,11 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
     cl_double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
-    for(long x = 0; x < stamp.size.first; x++) {
+    for(long x = stamp.center.first - args.hStampWidth;
+        x <= stamp.center.first + args.hStampWidth; x++) {
       absx = x + stamp.coords.first;
-      for(long y = 0; y < stamp.size.second; y++) {
+      for(long y = stamp.center.second - args.hStampWidth;
+          y <= stamp.center.second + args.hStampWidth; y++) {
         absy = y + stamp.coords.second;
         coords = x + (y * stamp.size.first);
 

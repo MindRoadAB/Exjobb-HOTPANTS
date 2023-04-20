@@ -35,6 +35,8 @@ struct Arguments {
   cl_int fSStampWidth = 31;  // full substamp width
   cl_int hKernelWidth = 10;  // half kernel width
   cl_int fKernelWidth = 21;  // full kernel width
+  cl_int hStampWidth = 10;   // half stamp widht
+  cl_int fStampWidth = 21;   // half stamp widht
 
   cl_int backgroundOrder = 1;
 

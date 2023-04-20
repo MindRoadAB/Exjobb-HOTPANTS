@@ -129,6 +129,7 @@ struct StampStats {
 struct Stamp {
   std::pair<cl_long, cl_long> coords{};
   std::pair<cl_long, cl_long> size{};
+  std::pair<cl_long, cl_long> center{};
   std::vector<SubStamp> subStamps{};
   std::vector<cl_double> data{};
   StampStats stats{};
