@@ -53,12 +53,12 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
   // Convolve Image with filterY taking pixels in a (args.hSStampWidth +
   // args.hKernelWidth) area around a substamp.
-  for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
-      i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
-    for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
+  for(int j = ssy - args.hSStampWidth; j <= ssy + args.hSStampWidth; j++) {
+    for(int i = ssx - args.hSStampWidth - args.hKernelWidth;
+        i <= ssx + args.hSStampWidth + args.hKernelWidth; i++) {
       tmp.push_back(0.0);
 
-      for(int y = args.hKernelWidth; y <= args.hKernelWidth; y++) {
+      for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
         tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
       }
@@ -71,7 +71,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       int index =
           i + args.hSStampWidth + (j + args.hSStampWidth) * args.fSStampWidth;
       s.W[n].push_back(0.0);
-      for(int x = args.hKernelWidth; x <= args.hKernelWidth; x++) {
+      for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
         s.W.back().back() += tmp[index] * k.filterX[n][args.hKernelWidth - x];
       }
     }
@@ -120,8 +120,8 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
         int odd = 0;
 
-        cl_double dx = (x / 2.0) * 2 - x;
-        cl_double dy = (y / 2.0) * 2 - y;
+        int dx = (x / 2) * 2 - x;
+        int dy = (y / 2) * 2 - y;
         if(dx == 0 && dy == 0 && nvec > 0) odd = 1;
 
         convStamp(s, tImg, k, nvec, odd);
