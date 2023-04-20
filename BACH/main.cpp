@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
   std::vector<std::vector<cl_double>> testMat(
       args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
 
-  for(int i = 1; i <= args.nPSF; i++) {
+  for(int i = 1; i <= args.nPSF + 1; i++) {
     testVec[i] = templateStamps[0].B[i];
     for(int j = 1; j <= i; j++) {
       testMat[i][j] = templateStamps[0].Q[i][j];

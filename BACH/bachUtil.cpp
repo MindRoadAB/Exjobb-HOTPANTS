@@ -279,11 +279,11 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
   rowInter = 0.0;
 
   // Calculate vv
-  for(int i = 1; i <= int(matrixSize); i++) {
+  for(int i = 1; i <= matrixSize; i++) {
     double big = 0.0;
-    for(int j = 1; j <= int(matrixSize); j++) {
-      temp2 = abs(matrix[i][j]);
-      big = temp2 > big ? temp2 : big;
+    for(int j = 1; j <= matrixSize; j++) {
+      temp2 = fabs(matrix[i][j]);
+      if(temp2 > big) big = temp2;
     }
     if(big == 0.0) {
       std::cout << " Numerical Recipies run error" << std::endl;
@@ -293,7 +293,7 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
   }
 
   // Do the rest
-  for(int j = 1; j <= int(matrixSize); j++) {
+  for(int j = 1; j <= matrixSize; j++) {
     for(int i = 1; i < j; i++) {
       double sum = matrix[i][j];
       for(int k = 1; k < i; k++) {
@@ -302,20 +302,20 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
       matrix[i][j] = sum;
     }
     double big = 0.0;
-    for(int i = j; i <= int(matrixSize); i++) {
+    for(int i = j; i <= matrixSize; i++) {
       double sum = matrix[i][j];
       for(int k = 1; k < j; k++) {
         sum -= matrix[i][k] * matrix[k][j];
       }
       matrix[i][j] = sum;
-      double dum = vv[i] * abs(sum);
+      double dum = vv[i] * fabs(sum);
       if(dum >= big) {
         big = dum;
         maxI = i;
       }
     }
     if(j != maxI) {
-      for(int k = 1; k <= int(matrixSize); k++) {
+      for(int k = 1; k <= matrixSize; k++) {
         double dum = matrix[maxI][k];
         matrix[maxI][k] = matrix[j][k];
         matrix[j][k] = dum;
@@ -325,9 +325,9 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
     }
     index[j] = maxI;
     matrix[j][j] = matrix[j][j] == 0.0 ? 1.0e-20 : matrix[j][j];
-    if(j != int(matrixSize)) {
+    if(j != matrixSize) {
       double dum = 1.0 / matrix[j][j];
-      for(int i = j + 1; i <= int(matrixSize); i++) {
+      for(int i = j + 1; i <= matrixSize; i++) {
         matrix[i][j] *= dum;
       }
     }
@@ -340,12 +340,12 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result) {
   int ii{};
 
-  for(int i = 1; i <= int(matrixSize); i++) {
+  for(int i = 1; i <= matrixSize; i++) {
     int ip = index[i];
     double sum = result[ip];
     result[ip] = result[i];
     if(ii) {
-      for(int j = ii; j <= i; j++) {
+      for(int j = ii; j <= i - 1; j++) {
         sum -= matrix[i][j] * result[j];
       }
     } else if(sum) {
@@ -356,9 +356,9 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
 
   for(int i = matrixSize; i >= 1; i--) {
     double sum = result[i];
-    for(int j = i + 1; j <= int(matrixSize); j++) {
+    for(int j = i + 1; j <= matrixSize; j++) {
       sum -= matrix[i][j] * result[j];
-      result[i] = sum / matrix[i][i];
     }
+    result[i] = sum / matrix[i][i];
   }
 }
