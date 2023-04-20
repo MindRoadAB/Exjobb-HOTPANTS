@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
   /* ===== CMV ===== */
 
-  if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
+  std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
   for(auto& s : templateStamps) {
     fillStamp(s, templateImg, scienceImg, convolutionKernel);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
 
   /* ===== CD ===== */
 
-  std::cout << "Choosing Convolution Direction" << std::endl;
+  std::cout << "Choosing convolution direction..." << std::endl;
   std::vector<int> index(templateStamps[1].Q.size());
   double d;
   std::vector<std::vector<cl_double>> input = {{0.0, 0.0, 0.0, 0.0},
