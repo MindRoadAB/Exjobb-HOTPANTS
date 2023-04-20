@@ -29,10 +29,10 @@ struct Arguments {
 
   cl_int maxSStamps = 6;
 
-  cl_int nPSF = 49;  // nPSF
+  cl_int nPSF = 49;          // nPSF
 
   cl_int hSStampWidth = 15;  // half substamp width
-  cl_int fSStampWidth = 30;  // full substamp width
+  cl_int fSStampWidth = 31;  // full substamp width
   cl_int hKernelWidth = 10;  // half kernel width
   cl_int fKernelWidth = 21;  // full kernel width
 

@@ -14,8 +14,8 @@ void createB(Stamp& s, Image& img) {
     cl_double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
       for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
-        int k = x + args.hSStampWidth +
-                (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+        int k =
+            x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
         int imgIndex = x + ssx + (y + ssy) * img.axis.first;
         p0 += s.W[i][k] * img[imgIndex];
       }
@@ -26,8 +26,8 @@ void createB(Stamp& s, Image& img) {
   cl_double q = 0.0;
   for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
     for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
-      int k = x + args.hSStampWidth +
-              (args.hSStampWidth * 2) * (y + args.hSStampWidth);
+      int k =
+          x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
       int imgIndex = x + ssx + (y + ssy) * img.axis.first;
       q += s.W[args.nPSF][k] * img[imgIndex];
     }
@@ -142,8 +142,8 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
     }
   }
 
-  for(int x = ssx - args.hSStampWidth; x < ssx + args.hSStampWidth; x++) {
-    for(int y = ssy - args.hSStampWidth; y < ssy + args.hSStampWidth; y++) {
+  for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
+    for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
       cl_double ax = 1.0;
       cl_int nBGVec = 0;
       for(int j = 0; j <= args.backgroundOrder; j++) {

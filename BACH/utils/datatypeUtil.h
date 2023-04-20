@@ -375,10 +375,10 @@ struct Image {
 
   void maskSStamp(SubStamp& sstamp, masks m) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
-        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+        x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
       for(int y = sstamp.imageCoords.second - args.hSStampWidth;
-          y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+          y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y, m);
       }
@@ -386,9 +386,9 @@ struct Image {
   }
 
   void maskAroundPix(int inX, int inY, masks m) {
-    for(int x = inX - args.hSStampWidth; x < inX + args.hSStampWidth; x++) {
+    for(int x = inX - args.hSStampWidth; x <= inX + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
-      for(int y = inY - args.hSStampWidth; y < inY + args.hSStampWidth; y++) {
+      for(int y = inY - args.hSStampWidth; y <= inY + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y, m);
       }

@@ -53,10 +53,10 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
 double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
   double retVal = 0.0;
   for(int y = sstamp.imageCoords.second - args.hSStampWidth;
-      y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+      y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
     if(y < 0 || y >= image.axis.second) continue;
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
-        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+        x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= image.axis.first) continue;
 
       int absCoords = x + y * image.axis.first;
@@ -110,11 +110,11 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                      std::make_pair(x, y),
                      stamp[coords]};
           long kCoords;
-          for(long kx = absx - args.hSStampWidth; kx < absx + args.hSStampWidth;
-              kx++) {
+          for(long kx = absx - args.hSStampWidth;
+              kx <= absx + args.hSStampWidth; kx++) {
             if(kx < 0 || kx >= image.axis.first) continue;
             for(long ky = absy - args.hSStampWidth;
-                ky < absy + args.hSStampWidth; ky++) {
+                ky <= absy + args.hSStampWidth; ky++) {
               if(ky < 0 || ky >= image.axis.second) continue;
               kCoords = kx + (ky * image.axis.first);
 
