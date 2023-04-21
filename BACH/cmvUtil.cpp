@@ -65,13 +65,13 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
     }
   }
 
+  int subWidth = args.fKernelWidth + args.fSStampWidth - 1;
   // Convolve Image with filterX, image data already there.
-  for(int j = -args.hSStampWidth; j < args.hSStampWidth; j++) {
-    for(int i = -args.hSStampWidth; i < args.hSStampWidth; i++) {
+  for(int j = -args.hSStampWidth; j <= args.hSStampWidth; j++) {
+    for(int i = -args.hSStampWidth; i <= args.hSStampWidth; i++) {
       s.W[n].push_back(0.0);
       for(int x = -args.hKernelWidth; x <= args.hKernelWidth; x++) {
-        int index = (i + x) + args.hKernelWidth + args.hSStampWidth +
-                    (j + args.hSStampWidth) * args.fSStampWidth;
+        int index = (i + x) + subWidth / 2 + (j + args.hSStampWidth) * subWidth;
         s.W.back().back() += tmp[index] * k.filterX[n][args.hKernelWidth - x];
       }
     }
