@@ -140,9 +140,9 @@ int main(int argc, char* argv[]) {
 
       ludcmp(testMat, args.nPSF + 1, index, d);
       lubksb(testMat, args.nPSF + 1, index, testVec);
-      for(auto e : testVec) {
-        std::cout << e << std::endl;
-      }
+      // for(auto e : testVec) {
+      //   std::cout << e << std::endl;
+      // }
     }
   }
   /* ===== Conv ===== */

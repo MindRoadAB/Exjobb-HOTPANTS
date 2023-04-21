@@ -16,6 +16,11 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
 }
 
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
+  args.fStampWidth =
+      std::min(w / args.stampsx, h / args.stampsy) - args.fKernelWidth;
+  args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
+  args.hStampWidth = args.fStampWidth / 2;
+
   for(int j = 0; j < args.stampsy; j++) {
     for(int i = 0; i < args.stampsx; i++) {
       int stampw = w / args.stampsx;
@@ -87,11 +92,9 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
     cl_double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
-    for(long x = stamp.center.first - args.hStampWidth;
-        x <= stamp.center.first + args.hStampWidth; x++) {
+    for(long x = 0; x < args.fStampWidth; x++) {
       absx = x + stamp.coords.first;
-      for(long y = stamp.center.second - args.hStampWidth;
-          y <= stamp.center.second + args.hStampWidth; y++) {
+      for(long y = 0; y < args.fStampWidth; y++) {
         absy = y + stamp.coords.second;
         coords = x + (y * stamp.size.first);
 
@@ -118,10 +121,14 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
           long kCoords;
           for(long kx = absx - args.hSStampWidth;
               kx <= absx + args.hSStampWidth; kx++) {
-            if(kx < 0 || kx >= image.axis.first) continue;
+            if(kx < stamp.coords.first ||
+               kx >= stamp.coords.first + args.fStampWidth)
+              continue;
             for(long ky = absy - args.hSStampWidth;
                 ky <= absy + args.hSStampWidth; ky++) {
-              if(ky < 0 || ky >= image.axis.second) continue;
+              if(ky < stamp.coords.second ||
+                 ky >= stamp.coords.second + args.fStampWidth)
+                continue;
               kCoords = kx + (ky * image.axis.first);
 
               if(image[kCoords] >= args.threshHigh) {
