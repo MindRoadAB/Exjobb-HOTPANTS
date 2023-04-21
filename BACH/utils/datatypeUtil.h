@@ -148,38 +148,6 @@ struct Stamp {
         subStamps{subStamps},
         data{stampData} {}
 
-  // Stamp(const Stamp& other)
-  //     : coords{other.coords},
-  //       size{other.size},
-  //       center{other.center},
-  //       subStamps{other.subStamps},
-  //       data{other.data} {}
-
-  // Stamp(Stamp&& other)
-  //     : coords{other.coords},
-  //       size{other.size},
-  //       center{other.center},
-  //       subStamps{std::move(other.subStamps)},
-  //       data{std::move(other.data)} {}
-
-  // Stamp& operator=(const Stamp& other) {
-  //   this->coords = other.coords;
-  //   this->size = other.size;
-  //   this->center = other.center;
-  //   this->subStamps = other.subStamps;
-  //   this->data = other.data;
-  //   return *this;
-  // }
-
-  // Stamp& operator=(Stamp&& other) {
-  //   this->coords = other.coords;
-  //   this->size = other.size;
-  //   this->center = other.center;
-  //   this->subStamps = std::move(other.subStamps);
-  //   this->data = std::move(other.data);
-  //   return *this;
-  // }
-
   cl_double operator[](size_t index) { return data[index]; }
 
   cl_double pixels() { return size.first * size.second; }
@@ -194,7 +162,7 @@ struct Stamp {
       for(int j = 0; j <= i; j++) {
         cl_double q = 0.0;
         for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
-          q += W[i][k] + W[j][k];
+          q += W[i][k] * W[j][k];
         }
         Q[i + 1][j + 1] = q;
       }
@@ -254,54 +222,6 @@ struct Image {
         badPixelMask(this->size(), false),
         psfMask(this->size(), false),
         edgeMask(this->size(), false) {}
-
-  Image(const Image& other)
-      : name{other.name},
-        path{other.path},
-        axis{other.axis},
-        data{other.data},
-        nanMask(other.nanMask),
-        badInputMask(other.badInputMask),
-        badPixelMask(other.badPixelMask),
-        psfMask(other.psfMask),
-        edgeMask(other.edgeMask) {}
-
-  Image(Image&& other)
-      : name{other.name},
-        path{other.path},
-        axis{other.axis},
-        data{std::move(other.data)},
-        nanMask(std::move(other.nanMask)),
-        badInputMask(std::move(other.badInputMask)),
-        badPixelMask(std::move(other.badPixelMask)),
-        psfMask(std::move(other.psfMask)),
-        edgeMask(std::move(other.edgeMask)) {}
-
-  Image& operator=(const Image& other) {
-    name = other.name;
-    path = other.path;
-    axis = other.axis;
-    data = other.data;
-    nanMask = other.nanMask;
-    badInputMask = other.badInputMask;
-    badPixelMask = other.badPixelMask;
-    psfMask = other.psfMask;
-    edgeMask = other.edgeMask;
-    return *this;
-  }
-
-  Image& operator=(Image&& other) {
-    name = other.name;
-    path = other.path;
-    axis = other.axis;
-    data = std::move(other.data);
-    nanMask = std::move(other.nanMask);
-    badInputMask = std::move(other.badInputMask);
-    badPixelMask = std::move(other.badPixelMask);
-    psfMask = std::move(other.psfMask);
-    edgeMask = std::move(other.edgeMask);
-    return *this;
-  }
 
   cl_double* operator&() { return &data[0]; }
 
