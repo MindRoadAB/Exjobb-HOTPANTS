@@ -112,8 +112,7 @@ int main(int argc, char* argv[]) {
   /* ===== CD ===== */
 
   std::cout << "Choosing convolution direction..." << std::endl;
-  std::vector<int> index(templateStamps[1].Q.size());
-  double d;
+
   std::vector<std::vector<cl_double>> input = {{0.0, 0.0, 0.0, 0.0},
                                                {0.0, 3.123, 5.1, 23.5},
                                                {0.0, 22.5, 50.5, 30.0},
@@ -125,6 +124,8 @@ int main(int argc, char* argv[]) {
 
   for(auto s : templateStamps) {
     if(!s.subStamps.empty()) {
+      std::vector<int> index(s.Q.size());
+      double d;
       std::vector<cl_double> testVec(args.nPSF + 2, 0.0);
       std::vector<std::vector<cl_double>> testMat(
           args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));

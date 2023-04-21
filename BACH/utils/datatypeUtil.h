@@ -148,37 +148,37 @@ struct Stamp {
         subStamps{subStamps},
         data{stampData} {}
 
-  Stamp(const Stamp& other)
-      : coords{other.coords},
-        size{other.size},
-        center{other.center},
-        subStamps{other.subStamps},
-        data{other.data} {}
+  // Stamp(const Stamp& other)
+  //     : coords{other.coords},
+  //       size{other.size},
+  //       center{other.center},
+  //       subStamps{other.subStamps},
+  //       data{other.data} {}
 
-  Stamp(Stamp&& other)
-      : coords{other.coords},
-        size{other.size},
-        center{other.center},
-        subStamps{std::move(other.subStamps)},
-        data{std::move(other.data)} {}
+  // Stamp(Stamp&& other)
+  //     : coords{other.coords},
+  //       size{other.size},
+  //       center{other.center},
+  //       subStamps{std::move(other.subStamps)},
+  //       data{std::move(other.data)} {}
 
-  Stamp& operator=(const Stamp& other) {
-    this->coords = other.coords;
-    this->size = other.size;
-    this->center = other.center;
-    this->subStamps = other.subStamps;
-    this->data = other.data;
-    return *this;
-  }
+  // Stamp& operator=(const Stamp& other) {
+  //   this->coords = other.coords;
+  //   this->size = other.size;
+  //   this->center = other.center;
+  //   this->subStamps = other.subStamps;
+  //   this->data = other.data;
+  //   return *this;
+  // }
 
-  Stamp& operator=(Stamp&& other) {
-    this->coords = other.coords;
-    this->size = other.size;
-    this->center = other.center;
-    this->subStamps = std::move(other.subStamps);
-    this->data = std::move(other.data);
-    return *this;
-  }
+  // Stamp& operator=(Stamp&& other) {
+  //   this->coords = other.coords;
+  //   this->size = other.size;
+  //   this->center = other.center;
+  //   this->subStamps = std::move(other.subStamps);
+  //   this->data = std::move(other.data);
+  //   return *this;
+  // }
 
   cl_double operator[](size_t index) { return data[index]; }
 
