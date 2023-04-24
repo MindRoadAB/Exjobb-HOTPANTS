@@ -411,12 +411,13 @@ void testFit(std::vector<Stamp>& stamps, Image& img) {
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
   int matSize = nComp1 * nComp2 + nBGComp + 1;
+  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
 
   std::vector<std::vector<cl_double>> matrix(
       matSize, std::vector<cl_double>(matSize, 0.0));
   std::vector<std::vector<cl_double>> weight(
       stamps.size(), std::vector<cl_double>(nComp2, 0.0));
-  std::vector<cl_double> testKernSol(ncomp, 0.0);
+  std::vector<cl_double> testKernSol(nKernSolComp, 0.0);
 
   // do fit
   createMatrix(testStamps, matrix, weight, img.axis);
@@ -475,4 +476,95 @@ void createScProd(std::vector<Stamp>& stamps, Image& img,
 
     sI++;
   }
+}
+
+void createMatrix(std::vector<Stamp>& stamps,
+                  std::vector<std::vector<cl_double>>& matrix,
+                  std::vector<std::vector<cl_double>>& weight,
+                  std::pair<cl_long, cl_long>& imgSize) {
+  int nComp1 = args.nPSF - 1;
+  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;  // = 6
+  int nComp = nComp1 * nComp2;
+  int nBGVectors =
+      ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;  // = 3
+  int mat_size = nComp + nBGVectors + 1;
+
+  int pixStamp = args.fSStampWidth * args.fSStampWidth;
+  int hPixX = imgSize.first / 2, hPixY = imgSize.second / 2;
+
+  for(size_t st = 0; st < stamps.size(); st++) {
+    Stamp& s = stamps[st];
+    if(!s.subStamps.empty()) continue;
+
+    int xss = s.subStamps.front().imageCoords.first;
+    int yss = s.subStamps.front().imageCoords.second;
+
+    double a1 = 1.0;
+    for(int k = 0, i = 0; i <= int(args.kernelOrder); i++) {
+      double a2 = 1.0;
+      for(int j = 0; j <= int(args.kernelOrder); j++) {
+        weight[st][k++] = a1 * a2;
+        a2 *= cl_double(yss - hPixY) / hPixY;
+      }
+      a1 *= cl_double(xss - hPixX) / hPixX;
+    }
+
+    for(int i = 0; i < nComp; i++) {
+      int i1 = i / nComp2;
+      int i2 = i - i1 * nComp2;
+      for(int j = 0; j <= i; j++) {
+        int j1 = i / nComp2;
+        int j2 = i - j1 * nComp2;
+
+        matrix[i + 2][j + 2] +=
+            weight[st][i2] * weight[st][j2] * s.Q[i + 2][j + 2];
+      }
+    }
+
+    matrix[1][1] += s.Q[1][1];
+    for(int i = 0; i < nComp; i++) {
+      int i1 = i / nComp2;
+      int i2 = i - i1 * nComp2;
+      matrix[i + 2][1] += weight[st][i2] * s.Q[i1 + 2][1];
+    }
+
+    for(int iBG = 0; iBG < nBGVectors; iBG++) {
+      int i = nComp + iBG + 1;
+      int iVecBG = nComp1 + iBG + 1;
+      for(int i1 = 1; i1 < nComp1 + 1; i1++) {
+        double p0 = 0.0;
+
+        for(int k = 0; k < pixStamp; k++) {
+          p0 += s.W[i1][k] * s.W[iVecBG][k];
+        }
+
+        for(int i2 = 0; i2 < nComp2; i2++) {
+          int jj = (i1 - 1) * nComp2 + i2 + 1;
+          matrix[i + 1][jj + 1] += p0 * weight[st][i2];
+        }
+      }
+
+      double p0 = 0.0;
+      for(int k = 0; k < pixStamp; k++) {
+        p0 += s.W[0][k] * s.W[iVecBG][k];
+      }
+      matrix[i + 1][1] += p0;
+
+      for(int jBG = 0; jBG <= iBG; jBG++) {
+        double q = 0.0;
+        for(int k = 0; k < pixStamp; k++) {
+          q += s.W[iVecBG][k] * s.W[nComp1 + jBG + 1][k];
+        }
+        matrix[i + 1][nComp + jBG + 2] += q;
+      }
+    }
+  }
+
+  for(int i = 0; i < mat_size; i++) {
+    for(int j = 0; j <= i; j++) {
+      matrix[j + 1][i + 1] = matrix[i + 1][j + 1];
+    }
+  }
+
+  return;
 }
