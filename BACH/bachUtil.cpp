@@ -436,7 +436,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   cl_double sig{};
   i = 0;
   for(auto& ts : testStamps) {
-    sig = calcSig(ts, testKern.solution);
+    sig = calcSig(ts, testKern.solution, img);
     if(sig != -1 && sig <= 1e10) merit[i++] = sig;
   }
   cl_double meritMean, meritStdDev;
@@ -467,7 +467,7 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
   return bg;
 }
 
-cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol, Image& img) {
+cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
   int ssx = s.subStamps[0].imageCoords.first;
   int ssy = s.subStamps[0].imageCoords.second;
 
@@ -648,8 +648,8 @@ void createMatrix(std::vector<Stamp>& stamps,
   return;
 }
 
-cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgSize,
-                     int x, int y) {
+cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
+                     int y) {
   /*
    * Calculates the kernel for a certain pixel, need finished kernelSol.
    */
@@ -665,9 +665,9 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgSize,
       double aY = 1.0;
       for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
-        aY *= (y - hImgAxis.second) / hImgAxis.second;
+        aY *= cl_double(y - hImgAxis.second) / hImgAxis.second;
       }
-      aX *= (x - hImgAxis.first) / hImgAxis.first;
+      aX *= cl_double(x - hImgAxis.first) / hImgAxis.first;
     }
   }
   kernCoeffs[0] = kern.solution[1];
@@ -687,7 +687,7 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgSize,
   return sumKernel;
 }
 
-std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double> kernSol,
+std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double>& kernSol,
                                    std::pair<cl_long, cl_long> imgSize) {
   static std::vector<cl_double> model(args.fKernelWidth * args.fKernelWidth,
                                       0.0);
