@@ -28,12 +28,15 @@ struct Kernel {
    * can use openCL convolution )
    */
 
+  std::vector<cl_double> currKernel{};
   std::vector<std::vector<cl_double>> filterX{};
   std::vector<std::vector<cl_double>> filterY{};
   std::vector<kernelStats> stats{};
   std::vector<cl_double> solution{};
 
-  Kernel() { resetKernVec(); }
+  Kernel() : currKernel(args.fKernelWidth * args.fKernelWidth, 0.0) {
+    resetKernVec();
+  }
 
   void resetKernVec() {
     /* Fill Kerenel Vector

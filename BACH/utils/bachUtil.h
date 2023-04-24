@@ -24,8 +24,8 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
            std::vector<int>& index, cl_double& rowInter);
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result);
-void makeKernel(Kernel&, int x, int y);
 cl_double calcSig(Stamp&, std::vector<cl_double>);
+cl_double makeKernel(Kernel&, std::pair<cl_long, cl_long>, int x, int y);
 
 /* SSS */
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
