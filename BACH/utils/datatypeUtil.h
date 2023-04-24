@@ -35,6 +35,7 @@ struct Kernel {
   std::vector<cl_double> solution{};
 
   Kernel() : currKernel(args.fKernelWidth * args.fKernelWidth, 0.0) {
+    std::cout << "constructor?" << std::endl;
     resetKernVec();
   }
 
