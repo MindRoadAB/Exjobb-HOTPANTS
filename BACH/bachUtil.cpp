@@ -437,7 +437,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   int i = 0;
   for(auto& ts : testStamps) {
     sig = calcSig(ts, testKern.solution);
-    if(sig != -1 && sig <= ...) merit[i++] = sig;
+    if(sig != -1 && sig <= 1e10) merit[i++] = sig;
   }
   cl_double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
@@ -446,18 +446,48 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   return 666;
 }
 
-cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol) {
+cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol, Image& img) {
+  int ssx = s.subStamps[0].imageCoords.first;
+  int ssy = s.subStamps[0].imageCoords.second;
+
+  cl_double background{};  // TODO: fix function here
+
+  std::vector<cl_double> tmp{};
+  // TODO: make model
+
+  int sigCount = 0;
+  cl_double signal = 0.0;
   for(int y = 0; y < args.fSStampWidth; y++) {
+    int absY = y - args.hSStampWidth + ssy;
     for(int x = 0; x < args.fSStampWidth; x++) {
-      if() {
+      int absX = x - args.hSStampWidth + ssx;
+
+      int intIndex = x + y * args.fSStampWidth;
+      int absIndex = absX + absY * img.axis.first;
+      cl_double tDat = tmp[intIndex];
+
+      cl_double diff = tDat - img[absIndex] + background;
+      if(img.masked(absX, absY, Image::badInput) ||
+         std::abs(img[absIndex]) <= 1e-10) {
+        continue;
       } else {
+        tmp[intIndex] = diff;
       }
-      if() {
+      if(std::isnan(tDat) || std::isnan(img[absIndex])) {
+        img.maskPix(absX, absY, Image::badInput);
+        img.maskPix(absX, absY, Image::nan);
+        continue;
       }
+
+      sigCount++;
+      signal += diff * diff / (std::abs(img[absIndex]) * 2);
     }
   }
-  if() {
+  if(sigCount > 0) {
+    signal /= sigCount;
+    if(signal >= 1e10) signal = -1;
   } else {
+    signal = -1.0;
   }
   return;
 }
