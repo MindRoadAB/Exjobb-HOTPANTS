@@ -694,8 +694,7 @@ std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double> kernSol,
 
   std::pair<cl_long, cl_long> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
-  int xss = s.subStamps.front().imageCoords.first;
-  int yss = s.subStamps.front().imageCoords.second;
+  auto [xss, yss] = s.subStamps.front().imageCoords;
 
   for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
     model[i] = kernSol[1] * s.W[0][i];
