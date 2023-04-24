@@ -92,10 +92,10 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
     cl_double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
-    for(long x = 0; x < args.fStampWidth; x++) {
-      absx = x + stamp.coords.first;
-      for(long y = 0; y < args.fStampWidth; y++) {
-        absy = y + stamp.coords.second;
+    for(long y = 0; y < args.fStampWidth; y++) {
+      absy = y + stamp.coords.second;
+      for(long x = 0; x < args.fStampWidth; x++) {
+        absx = x + stamp.coords.first;
         coords = x + (y * stamp.size.first);
 
         if(image.masked(absx, absy, Image::badPixel, Image::psf, Image::edge)) {
@@ -119,15 +119,15 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                      std::make_pair(x, y),
                      stamp[coords]};
           long kCoords;
-          for(long kx = absx - args.hSStampWidth;
-              kx <= absx + args.hSStampWidth; kx++) {
-            if(kx < stamp.coords.first ||
-               kx >= stamp.coords.first + args.fStampWidth)
+          for(long ky = absy - args.hSStampWidth;
+              ky <= absy + args.hSStampWidth; ky++) {
+            if(ky < stamp.coords.second ||
+               ky >= stamp.coords.second + args.fStampWidth)
               continue;
-            for(long ky = absy - args.hSStampWidth;
-                ky <= absy + args.hSStampWidth; ky++) {
-              if(ky < stamp.coords.second ||
-                 ky >= stamp.coords.second + args.fStampWidth)
+            for(long kx = absx - args.hSStampWidth;
+                kx <= absx + args.hSStampWidth; kx++) {
+              if(kx < stamp.coords.first ||
+                 kx >= stamp.coords.first + args.fStampWidth)
                 continue;
               kCoords = kx + (ky * image.axis.first);
 

@@ -31,8 +31,8 @@ bool inImage(Image& image, int x, int y) {
   return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
 }
 
-void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
-               cl_double& stdDev) {
+void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
+               int iter) {
   /* Does sigma clipping on data to provide the mean and stdDev of said
    * data
    */
@@ -46,7 +46,7 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
   std::vector<bool> intMask(data.size(), false);
 
   // Do three times or a stable solution has been found.
-  for(int i = 0; (i < 3) && (currNPoints != prevNPoints); i++) {
+  for(int i = 0; (i < iter) && (currNPoints != prevNPoints); i++) {
     currNPoints = prevNPoints;
     mean = 0;
     stdDev = 0;
@@ -160,7 +160,7 @@ void calcStats(Stamp& stamp, Image& image) {
 
   // sigma clip of maskedStamp to get mean and sd.
   cl_double mean, stdDev, invStdDev;
-  sigmaClip(maskedStamp, mean, stdDev);
+  sigmaClip(maskedStamp, mean, stdDev, 3);
   invStdDev = 1.0 / stdDev;
 
   int attempts = 0;
@@ -270,13 +270,13 @@ void calcStats(Stamp& stamp, Image& image) {
   median = lowerBinVal + binSize * (median - 1.0);
 }
 
-void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
-            std::vector<int>& index, cl_double& rowInter) {
+int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+           std::vector<int>& index, cl_double& d) {
   std::vector<cl_double> vv(matrixSize + 1, 0.0);
   int maxI{};
   cl_double temp2{};
 
-  rowInter = 0.0;
+  d = 1.0;
 
   // Calculate vv
   for(int i = 1; i <= matrixSize; i++) {
@@ -287,7 +287,7 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
     }
     if(big == 0.0) {
       std::cout << " Numerical Recipies run error" << std::endl;
-      return;
+      return 1;
     }
     vv[i] = 1.0 / big;
   }
@@ -320,7 +320,7 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
         matrix[maxI][k] = matrix[j][k];
         matrix[j][k] = dum;
       }
-      rowInter = -rowInter;
+      d = -d;
       vv[maxI] = vv[j];
     }
     index[j] = maxI;
@@ -333,7 +333,7 @@ void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
     }
   }
 
-  return;
+  return 0;
 }
 
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
@@ -360,5 +360,119 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
       sum -= matrix[i][j] * result[j];
     }
     result[i] = sum / matrix[i][i];
+  }
+}
+
+void testFit(std::vector<Stamp>& stamps, Image& img) {
+  std::vector<cl_double> kernelSum(stamps.size(), 0.0);
+  std::vector<int> index(
+      args.nPSF + args.bg.size());  // Internal between ludcmp and lubksb.
+
+  int i = 0;
+  for(auto& s : stamps) {
+    if(!s.subStamps.empty()) {
+      double d;
+      std::vector<cl_double> testVec(args.nPSF + 2, 0.0);
+      std::vector<std::vector<cl_double>> testMat(
+          args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
+
+      for(int i = 1; i <= args.nPSF + 1; i++) {
+        testVec[i] = s.B[i];
+        for(int j = 1; j <= i; j++) {
+          testMat[i][j] = s.Q[i][j];
+          testMat[j][i] = testMat[i][j];
+        }
+      }
+
+      ludcmp(testMat, args.nPSF + 1, index, d);
+      lubksb(testMat, args.nPSF + 1, index, testVec);
+
+      s.stats.norm = testVec[1];
+      kernelSum[i] = testVec[1];
+      i++;
+    }
+  }
+
+  cl_double kernelMean, kernelStdev;
+  sigmaClip(kernelSum, kernelMean, kernelStdev, 10);
+
+  // normalise
+  for(auto& s : stamps) {
+    s.stats.diff = std::abs((s.stats.norm - kernelMean) / kernelStdev);
+  }
+
+  // global fit
+  std::vector<Stamp> testStamps{};
+  for(auto& s : stamps) {
+    if(s.stats.diff < args.threshKernFit) testStamps.push_back(s);
+  }
+
+  int nComp1 = args.nPSF - 1;
+  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
+  int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
+  int matSize = nComp1 * nComp2 + nBGComp + 1;
+
+  std::vector<std::vector<cl_double>> matrix(
+      matSize, std::vector<cl_double>(matSize, 0.0));
+  std::vector<std::vector<cl_double>> weight(
+      stamps.size(), std::vector<cl_double>(nComp2, 0.0));
+  std::vector<cl_double> testKernSol(ncomp, 0.0);
+
+  // do fit
+  createMatrix(testStamps, matrix, weight, img.axis);
+  createScProd(testStamps, img, weight, testKernSol);
+
+  double d;
+  ludcmp(matrix, matSize, index, d);
+  lubksb(matrix, matSize, index, testKernSol);
+
+  Kernel testKern{};
+  testKern.solution = testKernSol;
+  kernelMean = makeKernel(testKern, 0, 0);
+
+  // calc merit value
+}
+
+void createScProd(std::vector<Stamp>& stamps, Image& img,
+                  std::vector<std::vector<cl_double>>& weight,
+                  std::vector<cl_double>& res) {
+  int nComp1 = args.nPSF - 1;
+  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
+  int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
+
+  int sI = 0;
+  for(auto& s : stamps) {
+    if(s.subStamps.empty()) {
+      sI++;
+      continue;
+    }
+    int ssx = s.subStamps[0].imageCoords.first;
+    int ssy = s.subStamps[0].imageCoords.second;
+
+    cl_double p0 = s.B[1];
+    res[1] += p0;
+
+    for(int i = 1; i < nComp1; i++) {
+      p0 = s.B[i + 1];
+      for(int j = 0; j < nComp2; j++) {
+        int indx = (i - 1) * nComp2 + j + 1;
+        res[indx + 1] += p0 * weight[sI][j];
+      }
+    }
+
+    for(int bgIndex = 0; bgIndex < nBGComp; bgIndex++) {
+      cl_double q = 0.0;
+      for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
+        for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
+          int index = x + args.hSStampWidth +
+                      args.fSStampWidth * (y + args.hSStampWidth);
+          q += s.W[nComp1 + bgIndex + 1][index] *
+               img[x + ssx + (y + ssy) * img.axis.first];
+        }
+      }
+      res[nComp1 + bgIndex + 2] += q;
+    }
+
+    sI++;
   }
 }

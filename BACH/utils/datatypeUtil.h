@@ -31,6 +31,7 @@ struct Kernel {
   std::vector<std::vector<cl_double>> filterX{};
   std::vector<std::vector<cl_double>> filterY{};
   std::vector<kernelStats> stats{};
+  std::vector<cl_double> solution{};
 
   Kernel() { resetKernVec(); }
 
@@ -124,6 +125,8 @@ struct SubStamp {
 struct StampStats {
   cl_double skyEst{};  // Mode of stamp
   cl_double fwhm{};    // Middle part value diff (full width half max)
+  cl_double norm{};
+  cl_double diff{};
 };
 
 struct Stamp {

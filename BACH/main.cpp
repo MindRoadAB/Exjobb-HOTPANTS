@@ -122,29 +122,6 @@ int main(int argc, char* argv[]) {
   // ludcmp(input, 3, index, d);
   // lubksb(input, 3, index, output);
 
-  for(auto s : templateStamps) {
-    if(!s.subStamps.empty()) {
-      std::vector<int> index(s.Q.size());
-      double d;
-      std::vector<cl_double> testVec(args.nPSF + 2, 0.0);
-      std::vector<std::vector<cl_double>> testMat(
-          args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
-
-      for(int i = 1; i <= args.nPSF + 1; i++) {
-        testVec[i] = s.B[i];
-        for(int j = 1; j <= i; j++) {
-          testMat[i][j] = s.Q[i][j];
-          testMat[j][i] = testMat[i][j];
-        }
-      }
-
-      ludcmp(testMat, args.nPSF + 1, index, d);
-      lubksb(testMat, args.nPSF + 1, index, testVec);
-      // for(auto e : testVec) {
-      //   std::cout << e << std::endl;
-      // }
-    }
-  }
   /* ===== Conv ===== */
   std::cout << "Doing Convolution" << std::endl;
 

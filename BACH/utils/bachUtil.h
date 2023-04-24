@@ -15,17 +15,18 @@
 /* Utils */
 void checkError(cl_int err);
 void maskInput(Image& img);
-void sigmaClip(std::vector<cl_double>& data, cl_double& mean,
-               cl_double& stdDev);
+void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
+               int iter);
 bool inImage(Image& image, int x, int y);
 void calcStats(Stamp& stamp, Image& image);
 
-void ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
-            std::vector<int>& index, cl_double& rowInter);
+int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
+           std::vector<int>& index, cl_double& rowInter);
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result);
 
 void makeKernel(Kernel&, int x, int y);
+void testFit(std::vector<Stamp>& stamps, Image& img);
 
 /* SSS */
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
