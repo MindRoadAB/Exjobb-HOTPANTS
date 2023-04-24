@@ -627,7 +627,7 @@ void createMatrix(std::vector<Stamp>& stamps,
   return;
 }
 
-cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgAxis,
+cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgSize,
                      int x, int y) {
   /*
    * Calculates the kernel for a certain pixel, need finished kernelSol.
@@ -635,18 +635,18 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgAxis,
 
   int k = 2;
   std::vector<cl_double> kernCoeffs(args.nPSF, 0.0);
-  std::pair<cl_double, cl_double> hImgAxis =
-      std::make_pair(0.5 * imgAxis.first, 0.5 * imgAxis.second);
+  std::pair<cl_long, cl_long> hImgAxis =
+      std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
 
   for(int i = 1; i < args.nPSF; i++) {
-    double aX = 0.0;
+    double aX = 1.0;
     for(int iX = 0; iX < -args.kernelOrder; iX++) {
-      double aY = 0.0;
+      double aY = 1.0;
       for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
         aY *= (y - hImgAxis.second) / hImgAxis.second;
       }
-      aY *= (x - hImgAxis.first) / hImgAxis.first;
+      aX *= (x - hImgAxis.first) / hImgAxis.first;
     }
   }
   kernCoeffs[0] = kern.solution[1];
@@ -664,4 +664,37 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgAxis,
   }
 
   return sumKernel;
+}
+
+std::vector<cl_double>&& makeModel(Stamp& s, Kernel& kern,
+                                   std::pair<cl_long, cl_long> imgSize) {
+  static std::vector<cl_double> model(args.fKernelWidth * args.fKernelWidth,
+                                      0.0);
+
+  std::pair<cl_long, cl_long> hImgAxis =
+      std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
+  int xss = s.subStamps.front().imageCoords.first;
+  int yss = s.subStamps.front().imageCoords.second;
+
+  for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
+    model[i] = kern.solution[1] * s.W[0][i];
+  }
+
+  for(int i = 1, k = 2; i < args.nPSF; i++) {
+    double aX = 1.0, coeff = 0.0;
+    for(int iX = 0; iX < -args.kernelOrder; iX++) {
+      double aY = 1.0;
+      for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
+        coeff += kern.solution[k++] * aX * aY;
+        aY *= cl_double(yss - hImgAxis.second) / hImgAxis.second;
+      }
+      aX *= cl_double(xss - hImgAxis.first) / hImgAxis.first;
+    }
+
+    for(int j = 0; j < args.fKernelWidth * args.fKernelWidth; j++) {
+      model[i] = coeff * s.W[i][j];
+    }
+  }
+
+  return std::move(model);
 }
