@@ -434,7 +434,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   // calc merit value
   std::vector<cl_double> merit(testStamps.size(), 0.0);
   cl_double sig{};
-  int i = 0;
+  i = 0;
   for(auto& ts : testStamps) {
     sig = calcSig(ts, testKern.solution);
     if(sig != -1 && sig <= 1e10) merit[i++] = sig;
@@ -446,14 +446,35 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   return 666;
 }
 
+cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
+                        std::pair<cl_long, cl_long> imgSize) {
+  int BGComp = (args.nPSF - 1) *
+                   (((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2) +
+               1;
+  cl_double bg = 0.0;
+  int xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.second);
+  int yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
+
+  cl_double ax = 1.0;
+  for(int i = 0, k = 1; i <= BGComp; i++) {
+    cl_double ay = 1.0;
+    for(int j = 0; j <= BGComp - i; j++) {
+      bg += kernSol[BGComp + k++] * ax * ay;
+      ay *= yf;
+    }
+    ax *= xf;
+  }
+  return bg;
+}
+
 cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol, Image& img) {
   int ssx = s.subStamps[0].imageCoords.first;
   int ssy = s.subStamps[0].imageCoords.second;
 
-  cl_double background{};  // TODO: fix function here
+  cl_double background =
+      getBackground(ssx, ssy, kernSol, img.axis);  // TODO: fix function here
 
-  std::vector<cl_double> tmp{};
-  // TODO: make model
+  std::vector<cl_double> tmp = makeModel(s, kernSol, img.axis);
 
   int sigCount = 0;
   cl_double signal = 0.0;
@@ -489,7 +510,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol, Image& img) {
   } else {
     signal = -1.0;
   }
-  return;
+  return signal;
 }
 
 void createScProd(std::vector<Stamp>& stamps, Image& img,
@@ -666,7 +687,7 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgSize,
   return sumKernel;
 }
 
-std::vector<cl_double>&& makeModel(Stamp& s, Kernel& kern,
+std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double> kernSol,
                                    std::pair<cl_long, cl_long> imgSize) {
   static std::vector<cl_double> model(args.fKernelWidth * args.fKernelWidth,
                                       0.0);
@@ -677,7 +698,7 @@ std::vector<cl_double>&& makeModel(Stamp& s, Kernel& kern,
   int yss = s.subStamps.front().imageCoords.second;
 
   for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
-    model[i] = kern.solution[1] * s.W[0][i];
+    model[i] = kernSol[1] * s.W[0][i];
   }
 
   for(int i = 1, k = 2; i < args.nPSF; i++) {
@@ -685,7 +706,7 @@ std::vector<cl_double>&& makeModel(Stamp& s, Kernel& kern,
     for(int iX = 0; iX < -args.kernelOrder; iX++) {
       double aY = 1.0;
       for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
-        coeff += kern.solution[k++] * aX * aY;
+        coeff += kernSol[k++] * aX * aY;
         aY *= cl_double(yss - hImgAxis.second) / hImgAxis.second;
       }
       aX *= cl_double(xss - hImgAxis.first) / hImgAxis.first;

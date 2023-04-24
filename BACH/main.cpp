@@ -113,14 +113,10 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Choosing convolution direction..." << std::endl;
 
-  std::vector<std::vector<cl_double>> input = {{0.0, 0.0, 0.0, 0.0},
-                                               {0.0, 3.123, 5.1, 23.5},
-                                               {0.0, 22.5, 50.5, 30.0},
-                                               {0.0, 33.0, 34.23, 20.0}};
-  std::vector<cl_double> output = {0.0, 2.0, 3.0, 4.0};
-
-  // ludcmp(input, 3, index, d);
-  // lubksb(input, 3, index, output);
+  cl_double templateMerit = testFit(templateStamps, templateImg);
+  cl_double scienceMerit = testFit(sciStamps, scienceImg);
+  std::cout << "template merit value = " << templateMerit
+            << ", science merit value = " << scienceMerit << std::endl;
 
   /* ===== Conv ===== */
   std::cout << "Doing Convolution" << std::endl;
