@@ -25,7 +25,7 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result);
 
-void makeKernel(Kernel&, int x, int y);
+cl_double makeKernel(Kernel&, std::pair<cl_long, cl_long>, int x, int y);
 void testFit(std::vector<Stamp>& stamps, Image& img);
 
 /* SSS */

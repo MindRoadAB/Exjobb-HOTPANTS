@@ -568,3 +568,42 @@ void createMatrix(std::vector<Stamp>& stamps,
 
   return;
 }
+
+cl_double makeKernel(Kernel& kern, std::pair<cl_double, cl_double> imgAxis,
+                     int x, int y) {
+  /*
+   * Calculates the kernel for a certain pixel, need finished kernelSol.
+   */
+
+  int k = 2;
+  std::vector<cl_double> kernCoeffs(args.nPSF, 0.0);
+  std::pair<cl_double, cl_double> hImgAxis =
+      std::make_pair(0.5 * imgAxis.first, 0.5 * imgAxis.second);
+
+  for(int i = 1; i < args.nPSF; i++) {
+    double aX = 0.0;
+    for(int iX = 0; iX < -args.kernelOrder; iX++) {
+      double aY = 0.0;
+      for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
+        kernCoeffs[i] += kern.solution[k++] * aX * aY;
+        aY *= (y - hImgAxis.second) / hImgAxis.second;
+      }
+      aY *= (x - hImgAxis.first) / hImgAxis.first;
+    }
+  }
+  kernCoeffs[0] = kern.solution[1];
+
+  for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
+    kern.currKernel[i] = 0.0;
+  }
+
+  cl_double sumKernel = 0.0;
+  for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
+    for(int psf = 0; psf < args.nPSF; psf++) {
+      kern.currKernel[i] += kernCoeffs[psf] * kern.kernVec[psf][i];
+    }
+    sumKernel += kern.currKernel[i];
+  }
+
+  return sumKernel;
+}
