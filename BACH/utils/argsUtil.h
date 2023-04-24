@@ -29,7 +29,7 @@ struct Arguments {
 
   cl_int maxSStamps = 6;
 
-  cl_int nPSF = 49;          // nPSF
+  cl_int nPSF = 49;  // nPSF
 
   cl_int hSStampWidth = 15;  // half substamp width
   cl_int fSStampWidth = 31;  // full substamp width
@@ -39,6 +39,7 @@ struct Arguments {
   cl_int fStampWidth = 0;    // half stamp width
 
   cl_int backgroundOrder = 1;
+  cl_int kernelOrder = 2;
 
   std::vector<cl_int> dg = {6, 4, 2};  // ngauss = length of dg
   std::vector<cl_double> bg = {
