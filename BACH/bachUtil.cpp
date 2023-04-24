@@ -364,9 +364,13 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
 }
 
 cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
+  int nComp1 = args.nPSF - 1;
+  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
+  int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
+  int matSize = nComp1 * nComp2 + nBGComp + 1;
+  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
   std::vector<cl_double> kernelSum(stamps.size(), 0.0);
-  std::vector<int> index(
-      args.nPSF + args.bg.size());  // Internal between ludcmp and lubksb.
+  std::vector<int> index(nKernSolComp);  // Internal between ludcmp and lubksb.
 
   int i = 0;
   for(auto& s : stamps) {
@@ -407,14 +411,8 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
     if(s.stats.diff < args.threshKernFit) testStamps.push_back(s);
   }
 
-  int nComp1 = args.nPSF - 1;
-  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
-  int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
-  int matSize = nComp1 * nComp2 + nBGComp + 1;
-  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
-
   std::vector<std::vector<cl_double>> matrix(
-      matSize, std::vector<cl_double>(matSize, 0.0));
+      matSize + 1, std::vector<cl_double>(matSize + 1, 0.0));
   std::vector<std::vector<cl_double>> weight(
       stamps.size(), std::vector<cl_double>(nComp2, 0.0));
   std::vector<cl_double> testKernSol(nKernSolComp, 0.0);
