@@ -363,7 +363,7 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
   }
 }
 
-void testFit(std::vector<Stamp>& stamps, Image& img) {
+cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   std::vector<cl_double> kernelSum(stamps.size(), 0.0);
   std::vector<int> index(
       args.nPSF + args.bg.size());  // Internal between ludcmp and lubksb.
@@ -432,6 +432,34 @@ void testFit(std::vector<Stamp>& stamps, Image& img) {
   kernelMean = makeKernel(testKern, 0, 0);
 
   // calc merit value
+  std::vector<cl_double> merit(testStamps.size(), 0.0);
+  cl_double sig{};
+  int i = 0;
+  for(auto& ts : testStamps) {
+    sig = calcSig(ts, testKern.solution);
+    if(sig != -1 && sig <= ...) merit[i++] = sig;
+  }
+  cl_double meritMean, meritStdDev;
+  sigmaClip(merit, meritMean, meritStdDev, 10);
+  meritMean /= kernelMean;
+  if(i > 0) return meritMean;
+  return 666;
+}
+
+cl_double calcSig(Stamp& s, std::vector<cl_double> kernSol) {
+  for(int y = 0; y < args.fSStampWidth; y++) {
+    for(int x = 0; x < args.fSStampWidth; x++) {
+      if() {
+      } else {
+      }
+      if() {
+      }
+    }
+  }
+  if() {
+  } else {
+  }
+  return;
 }
 
 void createScProd(std::vector<Stamp>& stamps, Image& img,

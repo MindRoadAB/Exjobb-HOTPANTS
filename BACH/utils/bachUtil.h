@@ -24,9 +24,8 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
            std::vector<int>& index, cl_double& rowInter);
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result);
-
 void makeKernel(Kernel&, int x, int y);
-void testFit(std::vector<Stamp>& stamps, Image& img);
+cl_double calcSig(Stamp&, std::vector<cl_double>);
 
 /* SSS */
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
@@ -41,7 +40,7 @@ void cutSStamp(SubStamp& ss, Image& img);
 void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
 
 /* CD && KSC */
-void calcMerit(std::vector<Stamp>& s, Image& img);
+cl_double testFit(std::vector<Stamp>& stamps, Image& img);
 std::vector<std::vector<cl_double>>&& createM(std::vector<Stamp>& s);
 std::vector<cl_double>&& createFitSolution(std::vector<Stamp>& s, Image& img);
 
