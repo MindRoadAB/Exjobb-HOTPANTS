@@ -27,7 +27,7 @@ sssUtil.o: sssUtil.cpp
 cmvUtil.o: cmvUtil.cpp
 	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c cmvUtil.cpp
 
-cmvUtil.o: cdkscUtil.cpp
+cdkscUtil.o: cdkscUtil.cpp
 	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c cdkscUtil.cpp
 
 .PHONY: clean
