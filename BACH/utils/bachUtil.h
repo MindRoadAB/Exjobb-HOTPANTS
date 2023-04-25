@@ -52,7 +52,7 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
 cl_double testFit(std::vector<Stamp>& stamps, Image& img);
 std::vector<std::vector<cl_double>>&& createM(std::vector<Stamp>& s);
 std::vector<cl_double>&& createFitSolution(std::vector<Stamp>& s, Image& img);
-std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double>& kernSol,
-                                   std::pair<cl_long, cl_long> imgSize);
+std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
+                                 std::pair<cl_long, cl_long> imgSize);
 
 #endif

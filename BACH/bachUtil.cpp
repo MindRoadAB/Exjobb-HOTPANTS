@@ -495,7 +495,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
   cl_double background = getBackground(ssx, ssy, kernSol, img.axis);
   std::cout << "got background" << std::endl;
 
-  std::vector<cl_double> tmp = makeModel(s, kernSol, img.axis);
+  std::vector<cl_double> tmp{makeModel(s, kernSol, img.axis)};
   std::cout << "made model" << std::endl;
 
   int sigCount = 0;
@@ -532,6 +532,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
   } else {
     signal = -1.0;
   }
+  std::cout << "end" << std::endl;
   return signal;
 }
 
@@ -706,16 +707,15 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
   return sumKernel;
 }
 
-std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double>& kernSol,
-                                   std::pair<cl_long, cl_long> imgSize) {
-  static std::vector<cl_double> model(args.fKernelWidth * args.fKernelWidth,
-                                      0.0);
+std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
+                                 std::pair<cl_long, cl_long> imgSize) {
+  std::vector<cl_double> model(args.fSStampWidth * args.fSStampWidth, 0.0);
 
   std::pair<cl_long, cl_long> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
   auto [xss, yss] = s.subStamps.front().imageCoords;
 
-  for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
+  for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++) {
     model[i] = kernSol[1] * s.W[0][i];
   }
 
@@ -730,10 +730,10 @@ std::vector<cl_double>&& makeModel(Stamp& s, std::vector<cl_double>& kernSol,
       aX *= cl_double(xss - hImgAxis.first) / hImgAxis.first;
     }
 
-    for(int j = 0; j < args.fKernelWidth * args.fKernelWidth; j++) {
+    for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {
       model[i] = coeff * s.W[i][j];
     }
   }
 
-  return std::move(model);
+  return model;
 }
