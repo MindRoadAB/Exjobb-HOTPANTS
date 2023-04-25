@@ -390,12 +390,10 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
         }
       }
 
-      if(nan) std::cout << count << " has nan!" << std::endl;
       ludcmp(testMat, args.nPSF + 1, index, d);
       lubksb(testMat, args.nPSF + 1, index, testVec);
 
       if(std::isnan(testVec[1])) {
-        std::cout << "sum will have nan" << std::endl;
         s.stats.norm = 1e10;
       } else {
         s.stats.norm = testVec[1];
@@ -407,7 +405,6 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
 
   cl_double kernelMean, kernelStdev;
   sigmaClip(kernelSum, kernelMean, kernelStdev, 10);
-  std::cout << "first clip" << std::endl;
 
   // normalise
   for(auto& s : stamps) {
@@ -429,21 +426,15 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
 
   // do fit
   createMatrix(testStamps, matrix, weight, img.axis);
-  std::cout << "matrix done" << std::endl;
   createScProd(testStamps, img, weight, testKernSol);
-  std::cout << "scprod done" << std::endl;
 
   double d;
   ludcmp(matrix, matSize, index, d);
-  std::cout << "ludcmp done" << std::endl;
   lubksb(matrix, matSize, index, testKernSol);
-  std::cout << "lubksb done" << std::endl;
 
   Kernel testKern{};
-  std::cout << "here?" << std::endl;
   testKern.solution = testKernSol;
   kernelMean = makeKernel(testKern, img.axis, 0, 0);
-  std::cout << "kernel made" << std::endl;
 
   // calc merit value
   std::vector<cl_double> merit(testStamps.size(), 0.0);
@@ -453,10 +444,8 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
     sig = calcSig(ts, testKern.solution, img);
     if(sig != -1 && sig <= 1e10) merit[count++] = sig;
   }
-  std::cout << "signals calculated" << std::endl;
   cl_double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
-  std::cout << "second sigma clip" << std::endl;
   meritMean /= kernelMean;
   if(count > 0) return meritMean;
   return 666;
@@ -464,7 +453,6 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
 
 cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                         std::pair<cl_long, cl_long> imgSize) {
-  std::cout << "getting background" << std::endl;
   int BGComp = (args.nPSF - 1) *
                    (((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2) +
                1;
@@ -476,8 +464,6 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
   for(int i = 0, k = 1; i <= args.backgroundOrder; i++) {
     cl_double ay = 1.0;
     for(int j = 0; j <= args.backgroundOrder - i; j++) {
-      std::cout << "index: " << BGComp + k << ", size: " << kernSol.size()
-                << std::endl;
       bg += kernSol[BGComp + k++] * ax * ay;
       ay *= yf;
     }
@@ -487,16 +473,12 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
 }
 
 cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
-  std::cout << "calculating signals..." << std::endl;
   if(s.subStamps.empty()) return -1.0;
   int ssx = s.subStamps[0].imageCoords.first;
   int ssy = s.subStamps[0].imageCoords.second;
 
   cl_double background = getBackground(ssx, ssy, kernSol, img.axis);
-  std::cout << "got background" << std::endl;
-
   std::vector<cl_double> tmp{makeModel(s, kernSol, img.axis)};
-  std::cout << "made model" << std::endl;
 
   int sigCount = 0;
   cl_double signal = 0.0;
@@ -532,7 +514,6 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
   } else {
     signal = -1.0;
   }
-  std::cout << "end" << std::endl;
   return signal;
 }
 
@@ -672,7 +653,6 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
   /*
    * Calculates the kernel for a certain pixel, need finished kernelSol.
    */
-  std::cout << "making kernel..." << std::endl;
 
   int k = 2;
   std::vector<cl_double> kernCoeffs(args.nPSF, 0.0);

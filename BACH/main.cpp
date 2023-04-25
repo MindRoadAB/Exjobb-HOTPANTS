@@ -115,11 +115,18 @@ int main(int argc, char* argv[]) {
 
   cl_double templateMerit = testFit(templateStamps, templateImg);
   cl_double scienceMerit = testFit(sciStamps, scienceImg);
-  std::cout << "template merit value = " << templateMerit
-            << ", science merit value = " << scienceMerit << std::endl;
+  if(args.verbose)
+    std::cout << "template merit value = " << templateMerit
+              << ", science merit value = " << scienceMerit << std::endl;
+  if(scienceMerit < templateMerit) {
+    std::swap(scienceImg, templateImg);
+    std::swap(sciStamps, templateStamps);
+  }
+  if(args.verbose)
+    std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
   /* ===== Conv ===== */
-  std::cout << "Doing Convolution" << std::endl;
+  std::cout << "Convolving..." << std::endl;
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
