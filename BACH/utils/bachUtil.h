@@ -40,13 +40,16 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
 
 /* CD && KSC */
 cl_double testFit(std::vector<Stamp>& stamps, Image& img);
-void createMatrix(std::vector<Stamp>& stamps,
-                  std::vector<std::vector<cl_double>>& matrix,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::pair<cl_long, cl_long>& imgSize);
-void createScProd(std::vector<Stamp>& stamps, Image& img,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::vector<cl_double>& res);
+std::pair<std::vector<std::vector<cl_double>>,
+          std::vector<std::vector<cl_double>>>
+createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize);
+// void createMatrix(std::vector<Stamp>& stamps,
+//                   std::vector<std::vector<cl_double>>& matrix,
+//                   std::vector<std::vector<cl_double>>& weight,
+//                   std::pair<cl_long, cl_long>& imgSize);
+std::vector<cl_double> createScProd(
+    std::vector<Stamp>& stamps, Image& img,
+    std::vector<std::vector<cl_double>>& weight);
 cl_double calcSig(Stamp&, std::vector<cl_double>&, Image&);
 cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                         std::pair<cl_long, cl_long> imgSize);

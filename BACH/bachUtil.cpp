@@ -286,7 +286,8 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
       if(temp2 > big) big = temp2;
     }
     if(big == 0.0) {
-      std::cout << " Numerical Recipies run error" << std::endl;
+      if(args.verbose)
+        std::cout << " Numerical Recipies run error" << std::endl;
       return 1;
     }
     vv[i] = 1.0 / big;

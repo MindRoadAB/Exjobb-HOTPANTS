@@ -8,6 +8,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
   int matSize = nComp1 * nComp2 + nBGComp + 1;
   int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
+
   std::vector<cl_double> kernelSum(stamps.size(), 0.0);
   std::vector<int> index(nKernSolComp);  // Internal between ludcmp and lubksb.
 
@@ -55,15 +56,9 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
       testStamps.push_back(s);
   }
 
-  std::vector<std::vector<cl_double>> matrix(
-      matSize + 1, std::vector<cl_double>(matSize + 1, 0.0));
-  std::vector<std::vector<cl_double>> weight(
-      stamps.size(), std::vector<cl_double>(nComp2, 0.0));
-  std::vector<cl_double> testKernSol(nKernSolComp, 0.0);
-
   // do fit
-  createMatrix(testStamps, matrix, weight, img.axis);
-  createScProd(testStamps, img, weight, testKernSol);
+  auto [matrix, weight] = createMatrix(testStamps, img.axis);
+  std::vector<cl_double> testKernSol = createScProd(testStamps, img, weight);
 
   double d;
   ludcmp(matrix, matSize, index, d);
@@ -88,19 +83,23 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   return 666;
 }
 
-void createMatrix(std::vector<Stamp>& stamps,
-                  std::vector<std::vector<cl_double>>& matrix,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::pair<cl_long, cl_long>& imgSize) {
+std::pair<std::vector<std::vector<cl_double>>,
+          std::vector<std::vector<cl_double>>>
+createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;  // = 6
   int nComp = nComp1 * nComp2;
   int nBGVectors =
       ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;  // = 3
-  int mat_size = nComp + nBGVectors + 1;
+  int matSize = nComp + nBGVectors + 1;
 
   int pixStamp = args.fSStampWidth * args.fSStampWidth;
   int hPixX = imgSize.first / 2, hPixY = imgSize.second / 2;
+
+  std::vector<std::vector<cl_double>> matrix(
+      matSize + 1, std::vector<cl_double>(matSize + 1, 0.0));
+  std::vector<std::vector<cl_double>> weight(
+      stamps.size(), std::vector<cl_double>(nComp2, 0.0));
 
   for(size_t st = 0; st < stamps.size(); st++) {
     Stamp& s = stamps[st];
@@ -169,19 +168,24 @@ void createMatrix(std::vector<Stamp>& stamps,
     }
   }
 
-  for(int i = 0; i < mat_size; i++) {
+  for(int i = 0; i < matSize; i++) {
     for(int j = 0; j <= i; j++) {
       matrix[j + 1][i + 1] = matrix[i + 1][j + 1];
     }
   }
+
+  return std::make_pair(matrix, weight);
 }
 
-void createScProd(std::vector<Stamp>& stamps, Image& img,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::vector<cl_double>& res) {
+std::vector<cl_double> createScProd(
+    std::vector<Stamp>& stamps, Image& img,
+    std::vector<std::vector<cl_double>>& weight) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
+  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
+
+  std::vector<cl_double> res(nKernSolComp, 0.0);
 
   int sI = 0;
   for(auto& s : stamps) {
@@ -217,6 +221,7 @@ void createScProd(std::vector<Stamp>& stamps, Image& img,
 
     sI++;
   }
+  return res;
 }
 
 cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
