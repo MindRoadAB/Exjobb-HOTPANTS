@@ -98,6 +98,7 @@ source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
     "bachUtil.cpp"
+    "cdkscUtil.cpp"
     "cmvUtil.cpp"
     "sssUtil.cpp"
     "main.cpp"
