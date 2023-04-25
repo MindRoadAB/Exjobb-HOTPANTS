@@ -28,12 +28,10 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
         }
       }
 
-      ludcmp(testMat, args.nPSF + 1, index, d);
-      lubksb(testMat, args.nPSF + 1, index, testVec);
-
-      if(std::isnan(testVec[1])) {
+      if(ludcmp(testMat, args.nPSF + 1, index, d)) {
         s.stats.norm = 1e10;
       } else {
+        lubksb(testMat, args.nPSF + 1, index, testVec);
         s.stats.norm = testVec[1];
         kernelSum[count] = testVec[1];
         count++;

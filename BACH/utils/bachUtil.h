@@ -14,11 +14,11 @@
 
 /* Utils */
 void checkError(cl_int err);
-void maskInput(Image& img);
+void maskInput(Image&);
 void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
                int iter);
-bool inImage(Image& image, int x, int y);
-void calcStats(Stamp& stamp, Image& image);
+bool inImage(Image&, int x, int y);
+void calcStats(Stamp&, Image&);
 
 int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
            std::vector<int>& index, cl_double& rowInter);
@@ -27,33 +27,29 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
 cl_double makeKernel(Kernel&, std::pair<cl_long, cl_long>, int x, int y);
 
 /* SSS */
-void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
-double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp);
-cl_int findSStamps(Stamp& stamp, Image& image, int index);
-int identifySStamps(std::vector<Stamp>& stamps, Image& image);
+void createStamps(Image&, std::vector<Stamp>& stamps, int w, int h);
+double checkSStamp(SubStamp&, Image&, Stamp&);
+cl_int findSStamps(Stamp&, Image&, int index);
+int identifySStamps(std::vector<Stamp>& stamps, Image&);
 
 /* CMV */
-void createB(Stamp& s, Image& img);
-void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd);
-void cutSStamp(SubStamp& ss, Image& img);
-void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
+void createB(Stamp&, Image&);
+void convStamp(Stamp&, Image&, Kernel&, int n, int odd);
+void cutSStamp(SubStamp&, Image&);
+void fillStamp(Stamp&, Image& tImg, Image& sImg, Kernel&);
 
 /* CD && KSC */
-cl_double testFit(std::vector<Stamp>& stamps, Image& img);
+cl_double testFit(std::vector<Stamp>& stamps, Image&);
 std::pair<std::vector<std::vector<cl_double>>,
           std::vector<std::vector<cl_double>>>
 createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize);
-// void createMatrix(std::vector<Stamp>& stamps,
-//                   std::vector<std::vector<cl_double>>& matrix,
-//                   std::vector<std::vector<cl_double>>& weight,
-//                   std::pair<cl_long, cl_long>& imgSize);
 std::vector<cl_double> createScProd(
-    std::vector<Stamp>& stamps, Image& img,
+    std::vector<Stamp>& stamps, Image&,
     std::vector<std::vector<cl_double>>& weight);
-cl_double calcSig(Stamp&, std::vector<cl_double>&, Image&);
+cl_double calcSig(Stamp&, std::vector<cl_double>& kernSol, Image&);
 cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                         std::pair<cl_long, cl_long> imgSize);
-std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
+std::vector<cl_double> makeModel(Stamp&, std::vector<cl_double>& kernSol,
                                  std::pair<cl_long, cl_long> imgSize);
 
 #endif
