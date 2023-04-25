@@ -18,14 +18,12 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
       std::vector<cl_double> testVec(args.nPSF + 2, 0.0);
       std::vector<std::vector<cl_double>> testMat(
           args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
-      bool nan = false;
 
       for(int i = 1; i <= args.nPSF + 1; i++) {
         testVec[i] = s.B[i];
         for(int j = 1; j <= i; j++) {
           testMat[i][j] = s.Q[i][j];
           testMat[j][i] = testMat[i][j];
-          if(std::isnan(testMat[j][i])) nan = true;
         }
       }
 

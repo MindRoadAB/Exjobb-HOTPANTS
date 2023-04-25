@@ -212,7 +212,7 @@ void calcStats(Stamp& stamp, Image& image) {
     }
 
     cl_double maxDens = 0.0;
-    int lowerIndex, upperIndex, maxIndex;
+    int lowerIndex, upperIndex, maxIndex = -1;
     for(lowerIndex = upperIndex = 1; upperIndex < 255;
         sumBins -= bins[lowerIndex++]) {
       while(sumBins < okCount / 10.0 && upperIndex < 255) {
