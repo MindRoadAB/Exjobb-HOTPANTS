@@ -4,7 +4,7 @@ CXX    = g++
 CXXFLAGS = -std=c++20 -pedantic -Wall -Wextra -fcommon -O3
 LOADLIBES  = -lCCfits -lcfitsio -lOpenCL
 
-BIN =   main.o bachUtil.o sssUtil.o cmvUtil.o
+BIN =   main.o  bachUtil.o sssUtil.o cmvUtil.o cdkscUtil.o
 
 all: $(BIN)
 	$(CXX) $(CXXFLAGS) $(LOADLIBES) -o BACH $(BIN)
@@ -26,6 +26,9 @@ sssUtil.o: sssUtil.cpp
 
 cmvUtil.o: cmvUtil.cpp
 	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c cmvUtil.cpp
+
+cmvUtil.o: cdkscUtil.cpp
+	$(CXX) $(CXXFLAGS) $(LOADLIBES) -c cdkscUtil.cpp
 
 .PHONY: clean
 clean:
