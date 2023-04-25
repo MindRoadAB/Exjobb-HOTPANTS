@@ -24,17 +24,7 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
            std::vector<int>& index, cl_double& rowInter);
 void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
             std::vector<int>& index, std::vector<cl_double>& result);
-cl_double calcSig(Stamp&, std::vector<cl_double>&, Image&);
 cl_double makeKernel(Kernel&, std::pair<cl_long, cl_long>, int x, int y);
-cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
-                        std::pair<cl_long, cl_long> imgSize);
-void createMatrix(std::vector<Stamp>& stamps,
-                  std::vector<std::vector<cl_double>>& matrix,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::pair<cl_long, cl_long>& imgSize);
-void createScProd(std::vector<Stamp>& stamps, Image& img,
-                  std::vector<std::vector<cl_double>>& weight,
-                  std::vector<cl_double>& res);
 
 /* SSS */
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h);
@@ -50,8 +40,16 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k);
 
 /* CD && KSC */
 cl_double testFit(std::vector<Stamp>& stamps, Image& img);
-std::vector<std::vector<cl_double>>&& createM(std::vector<Stamp>& s);
-std::vector<cl_double>&& createFitSolution(std::vector<Stamp>& s, Image& img);
+void createMatrix(std::vector<Stamp>& stamps,
+                  std::vector<std::vector<cl_double>>& matrix,
+                  std::vector<std::vector<cl_double>>& weight,
+                  std::pair<cl_long, cl_long>& imgSize);
+void createScProd(std::vector<Stamp>& stamps, Image& img,
+                  std::vector<std::vector<cl_double>>& weight,
+                  std::vector<cl_double>& res);
+cl_double calcSig(Stamp&, std::vector<cl_double>&, Image&);
+cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
+                        std::pair<cl_long, cl_long> imgSize);
 std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
                                  std::pair<cl_long, cl_long> imgSize);
 

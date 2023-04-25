@@ -165,7 +165,6 @@ struct Stamp {
 
   void createQ() {
     /* Does Equation 2.12 which create the left side of the Equation Ma=B */
-    if(args.verbose) std::cout << "Creating Q?..." << std::endl;
     Q = std::vector<std::vector<cl_double>>(
         args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
 
