@@ -34,8 +34,12 @@ struct Kernel {
   std::vector<kernelStats> stats{};
   std::vector<cl_double> solution{};
 
-  Kernel() : currKernel(args.fKernelWidth * args.fKernelWidth, 0.0) {
-    std::cout << "constructor?" << std::endl;
+  Kernel()
+      : currKernel(args.fKernelWidth * args.fKernelWidth, 0.0),
+        filterX{},
+        filterY{},
+        stats{},
+        solution{} {
     resetKernVec();
   }
 

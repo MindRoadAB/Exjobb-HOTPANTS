@@ -396,6 +396,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
 
       if(std::isnan(testVec[1])) {
         std::cout << "sum will have nan" << std::endl;
+        s.stats.norm = 1e10;
       } else {
         s.stats.norm = testVec[1];
         kernelSum[count] = testVec[1];
@@ -416,7 +417,8 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   // global fit
   std::vector<Stamp> testStamps{};
   for(auto& s : stamps) {
-    if(s.stats.diff < args.threshKernFit) testStamps.push_back(s);
+    if(s.stats.diff < args.threshKernFit && !s.subStamps.empty())
+      testStamps.push_back(s);
   }
 
   std::vector<std::vector<cl_double>> matrix(
@@ -471,9 +473,9 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
   int yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
 
   cl_double ax = 1.0;
-  for(int i = 0, k = 1; i <= BGComp; i++) {
+  for(int i = 0, k = 1; i <= args.backgroundOrder; i++) {
     cl_double ay = 1.0;
-    for(int j = 0; j <= BGComp - i; j++) {
+    for(int j = 0; j <= args.backgroundOrder - i; j++) {
       std::cout << "index: " << BGComp + k << ", size: " << kernSol.size()
                 << std::endl;
       bg += kernSol[BGComp + k++] * ax * ay;
@@ -546,8 +548,7 @@ void createScProd(std::vector<Stamp>& stamps, Image& img,
       sI++;
       continue;
     }
-    int ssx = s.subStamps[0].imageCoords.first;
-    int ssy = s.subStamps[0].imageCoords.second;
+    auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
     cl_double p0 = s.B[1];
     res[1] += p0;
@@ -570,7 +571,7 @@ void createScProd(std::vector<Stamp>& stamps, Image& img,
                img[x + ssx + (y + ssy) * img.axis.first];
         }
       }
-      res[nComp1 + bgIndex + 2] += q;
+      res[nComp1 * nComp2 + bgIndex + 2] += q;
     }
 
     sI++;
@@ -595,13 +596,12 @@ void createMatrix(std::vector<Stamp>& stamps,
     Stamp& s = stamps[st];
     if(s.subStamps.empty()) continue;
 
-    int xss = s.subStamps[0].imageCoords.first;
-    int yss = s.subStamps[0].imageCoords.second;
+    auto [xss, yss] = s.subStamps[0].imageCoords;
 
     double a1 = 1.0;
     for(int k = 0, i = 0; i <= int(args.kernelOrder); i++) {
       double a2 = 1.0;
-      for(int j = 0; j <= int(args.kernelOrder); j++) {
+      for(int j = 0; j <= int(args.kernelOrder) - i; j++) {
         weight[st][k++] = a1 * a2;
         a2 *= cl_double(yss - hPixY) / hPixY;
       }
