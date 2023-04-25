@@ -19,8 +19,8 @@ endif()
 # Global configuration types
 ################################################################################
 set(CMAKE_CONFIGURATION_TYPES
-    "Debug"
     "Release"
+    "Debug"
     CACHE STRING "" FORCE
 )
 
@@ -29,9 +29,9 @@ set(CMAKE_CONFIGURATION_TYPES
 ################################################################################
 if(MSVC)
     # remove default flags provided with CMake for MSVC
-    set(CMAKE_CXX_FLAGS "")
-    set(CMAKE_CXX_FLAGS_DEBUG "")
-    set(CMAKE_CXX_FLAGS_RELEASE "")
+    set(CMAKE_CXX_FLAGS "/O2")
+    set(CMAKE_CXX_FLAGS_DEBUG "/O2")
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2")
     set(CMAKE_CXX_STANDARD 20)
 endif()
 
@@ -91,10 +91,16 @@ set(Header_Files
     "utils/argsUtil.h"
     "utils/clUtil.h"
     "utils/fitsUtil.h"
+    "utils/bachUtil.h"
+    "utils/datatypeUtil.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
+    "bachUtil.cpp"
+    "cdkscUtil.cpp"
+    "cmvUtil.cpp"
+    "sssUtil.cpp"
     "main.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})

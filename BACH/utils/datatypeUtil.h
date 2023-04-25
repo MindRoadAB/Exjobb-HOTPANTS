@@ -4,6 +4,7 @@
 #include <CL/opencl.h>
 
 #include <cmath>
+#include <concepts>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -27,11 +28,20 @@ struct Kernel {
    * can use openCL convolution )
    */
 
+  std::vector<cl_double> currKernel{};
   std::vector<std::vector<cl_double>> filterX{};
   std::vector<std::vector<cl_double>> filterY{};
   std::vector<kernelStats> stats{};
+  std::vector<cl_double> solution{};
 
-  Kernel() { resetKernVec(); }
+  Kernel()
+      : currKernel(args.fKernelWidth * args.fKernelWidth, 0.0),
+        filterX{},
+        filterY{},
+        stats{},
+        solution{} {
+    resetKernVec();
+  }
 
   void resetKernVec() {
     /* Fill Kerenel Vector
@@ -123,11 +133,14 @@ struct SubStamp {
 struct StampStats {
   cl_double skyEst{};  // Mode of stamp
   cl_double fwhm{};    // Middle part value diff (full width half max)
+  cl_double norm{};
+  cl_double diff{};
 };
 
 struct Stamp {
   std::pair<cl_long, cl_long> coords{};
   std::pair<cl_long, cl_long> size{};
+  std::pair<cl_long, cl_long> center{};
   std::vector<SubStamp> subStamps{};
   std::vector<cl_double> data{};
   StampStats stats{};
@@ -137,70 +150,40 @@ struct Stamp {
 
   Stamp(){};
   Stamp(std::pair<cl_long, cl_long> stampCoords,
-        std::pair<cl_long, cl_long> stampSize,
+        std::pair<cl_long, cl_long> stampSize, std::pair<cl_long, cl_long> c,
         const std::vector<SubStamp>& subStamps,
         const std::vector<cl_double>& stampData)
       : coords{stampCoords},
         size{stampSize},
+        center{c},
         subStamps{subStamps},
         data{stampData} {}
-
-  Stamp(const Stamp& other)
-      : coords{other.coords},
-        size{other.size},
-        subStamps{other.subStamps},
-        data{other.data} {}
-
-  Stamp(Stamp&& other)
-      : coords{other.coords},
-        size{other.size},
-        subStamps{std::move(other.subStamps)},
-        data{std::move(other.data)} {}
-
-  Stamp& operator=(const Stamp& other) {
-    this->coords = other.coords;
-    this->size = other.size;
-    this->subStamps = other.subStamps;
-    this->data = other.data;
-    return *this;
-  }
-
-  Stamp& operator=(Stamp&& other) {
-    this->coords = other.coords;
-    this->size = other.size;
-    this->subStamps = std::move(other.subStamps);
-    this->data = std::move(other.data);
-    return *this;
-  }
 
   cl_double operator[](size_t index) { return data[index]; }
 
   cl_double pixels() { return size.first * size.second; }
 
-  inline void createQ() {
+  void createQ() {
     /* Does Equation 2.12 which create the left side of the Equation Ma=B */
-    if(args.verbose) std::cout << "Creating Q?..." << std::endl;
+    Q = std::vector<std::vector<cl_double>>(
+        args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
 
-    Q.emplace_back();
     for(int i = 0; i < args.nPSF; i++) {
-      Q.emplace_back();
       for(int j = 0; j <= i; j++) {
-        Q.back().emplace_back();
         cl_double q = 0.0;
         for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
-          q += W[i][k] + W[j][k];
+          q += W[i][k] * W[j][k];
         }
-        Q.back().push_back(q);
+        Q[i + 1][j + 1] = q;
       }
     }
 
-    Q.emplace_back();
     for(int i = 0; i < args.nPSF; i++) {
       cl_double p0 = 0.0;
       for(int k = 0; k < args.fSStampWidth * args.fSStampWidth; k++) {
         p0 += W[i][k] * W[args.nPSF][k];
       }
-      Q.back().push_back(p0);
+      Q[args.nPSF + 1][i + 1] = p0;
     }
 
     cl_double q = 0.0;
@@ -250,54 +233,6 @@ struct Image {
         psfMask(this->size(), false),
         edgeMask(this->size(), false) {}
 
-  Image(const Image& other)
-      : name{other.name},
-        path{other.path},
-        axis{other.axis},
-        data{other.data},
-        nanMask(other.nanMask),
-        badInputMask(other.badInputMask),
-        badPixelMask(other.badPixelMask),
-        psfMask(other.psfMask),
-        edgeMask(other.edgeMask) {}
-
-  Image(Image&& other)
-      : name{other.name},
-        path{other.path},
-        axis{other.axis},
-        data{std::move(other.data)},
-        nanMask(std::move(other.nanMask)),
-        badInputMask(std::move(other.badInputMask)),
-        badPixelMask(std::move(other.badPixelMask)),
-        psfMask(std::move(other.psfMask)),
-        edgeMask(std::move(other.edgeMask)) {}
-
-  Image& operator=(const Image& other) {
-    name = other.name;
-    path = other.path;
-    axis = other.axis;
-    data = other.data;
-    nanMask = other.nanMask;
-    badInputMask = other.badInputMask;
-    badPixelMask = other.badPixelMask;
-    psfMask = other.psfMask;
-    edgeMask = other.edgeMask;
-    return *this;
-  }
-
-  Image& operator=(Image&& other) {
-    name = other.name;
-    path = other.path;
-    axis = other.axis;
-    data = std::move(other.data);
-    nanMask = std::move(other.nanMask);
-    badInputMask = std::move(other.badInputMask);
-    badPixelMask = std::move(other.badPixelMask);
-    psfMask = std::move(other.psfMask);
-    edgeMask = std::move(other.edgeMask);
-    return *this;
-  }
-
   cl_double* operator&() { return &data[0]; }
 
   cl_double operator[](size_t index) { return data[index]; }
@@ -321,27 +256,34 @@ struct Image {
     return ptr;
   }
 
-  bool masked(int x, int y, masks m) {
-    switch(m) {
-      case nan:
-        return nanMask[x + (y * axis.first)];
-        break;
-      case badInput:
-        return badInputMask[x + (y * axis.first)];
-        break;
-      case badPixel:
-        return badPixelMask[x + (y * axis.first)];
-        break;
-      case psf:
-        return psfMask[x + (y * axis.first)];
-        break;
-      case edge:
-        return edgeMask[x + (y * axis.first)];
-        break;
-      default:
-        std::cout << "Error: Not caught by the switch case" << std::endl;
-        exit(1);
+  bool masked(int x, int y, std::same_as<Image::masks> auto... mI) {
+    std::vector<Image::masks> mL{mI...};
+    bool retVal = false;
+
+    for(Image::masks m : mL) {
+      switch(m) {
+        case nan:
+          retVal |= nanMask[x + (y * axis.first)];
+          break;
+        case badInput:
+          retVal |= badInputMask[x + (y * axis.first)];
+          break;
+        case badPixel:
+          retVal |= badPixelMask[x + (y * axis.first)];
+          break;
+        case psf:
+          retVal |= psfMask[x + (y * axis.first)];
+          break;
+        case edge:
+          retVal |= edgeMask[x + (y * axis.first)];
+          break;
+        default:
+          std::cout << "Error: Not caught by the switch case" << std::endl;
+          exit(1);
+      }
     }
+
+    return retVal;
   }
 
   void maskPix(int x, int y, masks m) {
@@ -369,10 +311,10 @@ struct Image {
 
   void maskSStamp(SubStamp& sstamp, masks m) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
-        x < sstamp.imageCoords.first + args.hSStampWidth; x++) {
+        x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
       for(int y = sstamp.imageCoords.second - args.hSStampWidth;
-          y < sstamp.imageCoords.second + args.hSStampWidth; y++) {
+          y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y, m);
       }
@@ -380,9 +322,9 @@ struct Image {
   }
 
   void maskAroundPix(int inX, int inY, masks m) {
-    for(int x = inX - args.hSStampWidth; x < inX + args.hSStampWidth; x++) {
+    for(int x = inX - args.hSStampWidth; x <= inX + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
-      for(int y = inY - args.hSStampWidth; y < inY + args.hSStampWidth; y++) {
+      for(int y = inY - args.hSStampWidth; y <= inY + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y, m);
       }

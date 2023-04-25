@@ -32,11 +32,14 @@ struct Arguments {
   cl_int nPSF = 49;  // nPSF
 
   cl_int hSStampWidth = 15;  // half substamp width
-  cl_int fSStampWidth = 30;  // full substamp width
+  cl_int fSStampWidth = 31;  // full substamp width
   cl_int hKernelWidth = 10;  // half kernel width
-  cl_int fKernelWidth = 20;  // full kernel width
+  cl_int fKernelWidth = 21;  // full kernel width
+  cl_int hStampWidth = 0;    // half stamp width
+  cl_int fStampWidth = 0;    // half stamp width
 
   cl_int backgroundOrder = 1;
+  cl_int kernelOrder = 2;
 
   std::vector<cl_int> dg = {6, 4, 2};  // ngauss = length of dg
   std::vector<cl_double> bg = {

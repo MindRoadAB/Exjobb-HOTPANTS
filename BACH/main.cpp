@@ -100,16 +100,33 @@ int main(int argc, char* argv[]) {
 
   /* ===== CMV ===== */
 
-  if(args.verbose) std::cout << "Calculating matrix variables..." << std::endl;
+  std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
-  for(auto s : templateStamps) {
+  for(auto& s : templateStamps) {
     fillStamp(s, templateImg, scienceImg, convolutionKernel);
   }
-  for(auto s : sciStamps) {
+  for(auto& s : sciStamps) {
     fillStamp(s, scienceImg, templateImg, convolutionKernel);
   }
 
+  /* ===== CD ===== */
+
+  std::cout << "Choosing convolution direction..." << std::endl;
+
+  cl_double templateMerit = testFit(templateStamps, templateImg);
+  cl_double scienceMerit = testFit(sciStamps, scienceImg);
+  if(args.verbose)
+    std::cout << "template merit value = " << templateMerit
+              << ", science merit value = " << scienceMerit << std::endl;
+  if(scienceMerit < templateMerit) {
+    std::swap(scienceImg, templateImg);
+    std::swap(sciStamps, templateStamps);
+  }
+  if(args.verbose)
+    std::cout << templateImg.name << " chosen to be convolved." << std::endl;
+
   /* ===== Conv ===== */
+  std::cout << "Convolving..." << std::endl;
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
