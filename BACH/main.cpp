@@ -126,6 +126,9 @@ int main(int argc, char* argv[]) {
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
   /* ===== KSC ===== */
+  if(args.verbose) std::cout << "Fitting kernel..." << std::endl;
+
+  fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 
   /* ===== Conv ===== */
   std::cout << "Convolving..." << std::endl;

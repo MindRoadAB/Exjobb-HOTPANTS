@@ -318,3 +318,33 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
 
   return model;
 }
+
+void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
+               Image& sImg) {
+  int nComp1 = args.nPSF - 1;
+  int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
+  int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
+  int matSize = nComp1 * nComp2 + nBGComp + 1;
+  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
+
+  auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
+  std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
+
+  std::vector<int> index(matSize, 0);
+  cl_double d{};
+  ludcmp(fittingMatrix, matSize, index, d);
+  lubksb(fittingMatrix, matSize, index, solution);
+
+  bool check = true;  // check again function here
+  while(check) {
+    if(args.verbose) std::cout << "Re-expanding matrix..." << std::endl;
+    auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
+    solution = createScProd(stamps, sImg, weight);
+
+    ludcmp(fittingMatrix, matSize, index, d);
+    lubksb(fittingMatrix, matSize, index, solution);
+
+    bool check = true;  // check again function here
+  }
+  k.solution = solution;
+}

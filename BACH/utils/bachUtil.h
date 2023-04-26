@@ -51,5 +51,6 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                         std::pair<cl_long, cl_long> imgSize);
 std::vector<cl_double> makeModel(Stamp&, std::vector<cl_double>& kernSol,
                                  std::pair<cl_long, cl_long> imgSize);
+void fitKernel(Kernel&, std::vector<Stamp>& stamps, Image& tImg, Image& sImg);
 
 #endif
