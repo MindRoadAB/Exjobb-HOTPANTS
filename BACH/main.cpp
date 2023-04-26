@@ -125,6 +125,8 @@ int main(int argc, char* argv[]) {
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
+  /* ===== KSC ===== */
+
   /* ===== Conv ===== */
   std::cout << "Convolving..." << std::endl;
 
