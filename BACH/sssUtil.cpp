@@ -12,6 +12,9 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
     if(!s.subStamps.empty()) hasSStamps++;
     index++;
   }
+  stamps.erase(std::remove_if(stamps.begin(), stamps.end(),
+                              [](Stamp& s) { return s.subStamps.empty(); }),
+               stamps.end());
   return hasSStamps;
 }
 
