@@ -103,16 +103,16 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
     Stamp& s = stamps[st];
     if(s.subStamps.empty()) continue;
 
-    auto [xss, yss] = s.subStamps[0].imageCoords;
+    auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
     double a1 = 1.0;
     for(int k = 0, i = 0; i <= int(args.kernelOrder); i++) {
       double a2 = 1.0;
       for(int j = 0; j <= int(args.kernelOrder) - i; j++) {
         weight[st][k++] = a1 * a2;
-        a2 *= cl_double(yss - hPixY) / hPixY;
+        a2 *= cl_double(ssy - hPixY) / hPixY;
       }
-      a1 *= cl_double(xss - hPixX) / hPixX;
+      a1 *= cl_double(ssx - hPixX) / hPixX;
     }
 
     for(int i = 0; i < nComp; i++) {
@@ -224,8 +224,7 @@ std::vector<cl_double> createScProd(
 
 cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
   if(s.subStamps.empty()) return -1.0;
-  int ssx = s.subStamps[0].imageCoords.first;
-  int ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   cl_double background = getBackground(ssx, ssy, kernSol, img.axis);
   std::vector<cl_double> tmp{makeModel(s, kernSol, img.axis)};
@@ -294,7 +293,7 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
 
   std::pair<cl_long, cl_long> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
-  auto [xss, yss] = s.subStamps.front().imageCoords;
+  auto [ssx, ssy] = s.subStamps.front().imageCoords;
 
   for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++) {
     model[i] = kernSol[1] * s.W[0][i];
@@ -306,9 +305,9 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
       double aY = 1.0;
       for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
         coeff += kernSol[k++] * aX * aY;
-        aY *= cl_double(yss - hImgAxis.second) / hImgAxis.second;
+        aY *= cl_double(ssy - hImgAxis.second) / hImgAxis.second;
       }
-      aX *= cl_double(xss - hImgAxis.first) / hImgAxis.first;
+      aX *= cl_double(ssx - hImgAxis.first) / hImgAxis.first;
     }
 
     for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {

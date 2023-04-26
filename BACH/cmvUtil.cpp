@@ -6,8 +6,7 @@ void createB(Stamp& s, Image& img) {
   /* Does Equation 2.13 which create the right side of the Equation Ma=B */
 
   s.B.emplace_back();
-  int ssx = s.subStamps[0].imageCoords.first;
-  int ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int i = 0; i < args.nPSF; i++) {
     cl_double p0 = 0.0;
@@ -43,8 +42,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
    */
 
   s.W.emplace_back();
-  cl_long ssx = s.subStamps[0].imageCoords.first;
-  cl_long ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   std::vector<cl_double> tmp{};
 
@@ -135,8 +133,7 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
     cutSStamp(s.subStamps[0], sImg);
   }
 
-  cl_long ssx = s.subStamps[0].imageCoords.first;
-  cl_long ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int j = 0; j <= args.backgroundOrder; j++) {
     for(int k = 0; k <= args.backgroundOrder - j; k++) {
