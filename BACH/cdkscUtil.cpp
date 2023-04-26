@@ -359,7 +359,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     if(!s.subStamps.empty()) {
       cl_double sig = calcSig(s, k.solution, tImg);
 
-      if(std::isnan(sig) || sig == -1) {
+      if(sig == -1) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;

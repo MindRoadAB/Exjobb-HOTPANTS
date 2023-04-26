@@ -130,6 +130,11 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   cutSStamp(s.subStamps[0], sImg);
 
+  while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
+    s.subStamps.erase(s.subStamps.begin());
+    cutSStamp(s.subStamps[0], sImg);
+  }
+
   cl_long ssx = s.subStamps[0].imageCoords.first;
   cl_long ssy = s.subStamps[0].imageCoords.second;
 
