@@ -135,6 +135,7 @@ struct StampStats {
   cl_double fwhm{};    // Middle part value diff (full width half max)
   cl_double norm{};
   cl_double diff{};
+  cl_double chi2{};
 };
 
 struct Stamp {

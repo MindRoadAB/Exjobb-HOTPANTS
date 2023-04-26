@@ -99,7 +99,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
   }
 }
 
-void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
+int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   /* Fills Substamp with gaussian basis convolved images around said substamp
    * and claculates CMV.
    */
@@ -108,7 +108,7 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       std::cout << "No eligable substamps in stamp at x = " << s.coords.first
                 << " y = " << s.coords.second << ", stamp rejected"
                 << std::endl;
-    return;
+    return 1;
   }
 
   int nvec = 0;
@@ -155,4 +155,6 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   s.createQ();  // TODO: is name accurate?
   createB(s, sImg);
+
+  return 0;
 }

@@ -325,7 +325,6 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
   int matSize = nComp1 * nComp2 + nBGComp + 1;
-  int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
   std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
@@ -335,7 +334,7 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   ludcmp(fittingMatrix, matSize, index, d);
   lubksb(fittingMatrix, matSize, index, solution);
 
-  bool check = true;  // check again function here
+  bool check = checkFitSolution(k, stamps, tImg, sImg);
   while(check) {
     if(args.verbose) std::cout << "Re-expanding matrix..." << std::endl;
     auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
@@ -344,7 +343,44 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     ludcmp(fittingMatrix, matSize, index, d);
     lubksb(fittingMatrix, matSize, index, solution);
 
-    bool check = true;  // check again function here
+    check = checkFitSolution(k, stamps, tImg, sImg);
   }
   k.solution = solution;
+}
+
+bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
+                      Image& sImg) {
+  std::vector<cl_double> ssValues(stamps.size());
+
+  bool check = false;
+
+  for(Stamp& s : stamps) {
+    if(!s.subStamps.empty()) {
+      cl_double sig = calcSig(s, k.solution, tImg);
+
+      if(sig == -1) {
+        s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
+        fillStamp(s, tImg, sImg, k);
+        check = true;
+      } else {
+        s.stats.chi2 = sig;
+        ssValues.push_back(sig);
+      }
+    }
+  }
+
+  cl_double mean = 0.0, stdDev = 0.0;
+  sigmaClip(ssValues, mean, stdDev, 10);
+
+  for(Stamp& s : stamps) {
+    if(!s.subStamps.empty()) {
+      if((s.stats.chi2 - mean) > args.threshKernFit * stdDev) {
+        s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
+
+        check = true;
+      }
+    }
+  }
+
+  return check;
 }
