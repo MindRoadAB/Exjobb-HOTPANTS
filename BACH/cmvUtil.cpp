@@ -112,6 +112,7 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   int nvec = 0;
+  s.W = std::vector<std::vector<cl_double>>();
   for(int g = 0; g < cl_int(args.dg.size()); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {

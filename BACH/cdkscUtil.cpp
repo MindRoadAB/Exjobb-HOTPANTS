@@ -334,6 +334,7 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   ludcmp(fittingMatrix, matSize, index, d);
   lubksb(fittingMatrix, matSize, index, solution);
 
+  k.solution = solution;
   bool check = checkFitSolution(k, stamps, tImg, sImg);
   while(check) {
     if(args.verbose) std::cout << "Re-expanding matrix..." << std::endl;
@@ -343,9 +344,9 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     ludcmp(fittingMatrix, matSize, index, d);
     lubksb(fittingMatrix, matSize, index, solution);
 
+    k.solution = solution;
     check = checkFitSolution(k, stamps, tImg, sImg);
   }
-  k.solution = solution;
 }
 
 bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
@@ -358,7 +359,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     if(!s.subStamps.empty()) {
       cl_double sig = calcSig(s, k.solution, tImg);
 
-      if(sig == -1) {
+      if(std::isnan(sig) || sig == -1) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;
