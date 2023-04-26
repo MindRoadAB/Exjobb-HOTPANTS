@@ -377,7 +377,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     if(!s.subStamps.empty()) {
       if((s.stats.chi2 - mean) > args.threshKernFit * stdDev) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
-
+        fillStamp(s, tImg, sImg, k);
         check = true;
       }
     }
