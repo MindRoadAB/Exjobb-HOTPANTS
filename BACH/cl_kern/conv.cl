@@ -6,11 +6,20 @@ void kernel conv(global const double *convKern, const long convWidth,
   long x = id % w;
   long y = id / w;
 
+  int xSteps = ceil((double)w / (double)convWidth);
+  int ySteps = ceil((double)h / (double)convWidth);
+
+  int xS = x / xSteps;
+  int yS = y / ySteps;
+    
+  int convOffset =  xS + (yS * xSteps);
+  
   long lim = convWidth % 2 == 0 ? (convWidth / 2) : (convWidth / 2 + 1);
   for(long i = -(convWidth / 2); i < lim; i++) {
     for(long j = -(convWidth / 2); j < lim; j++) {
       if((x + i >= 0) && (x + i < w) && (y + j >= 0) && (y + j < h)) {
         long convIndex = i + convWidth / 2 + (j + convWidth / 2) * convWidth;
+        convIndex += convOffset;
         long imgIndex = id + i + w * j;
         acc += convKern[convIndex] * image[imgIndex];
       }

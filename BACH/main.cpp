@@ -174,20 +174,23 @@ int main(int argc, char* argv[]) {
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
-
-  // box 5x5
-  cl_long kernWidth = 5;
-  cl_double a = 1.0 / (cl_double)(kernWidth * kernWidth);
-  cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
-                          a, a, a, a, a, a, a, a, a, a, a, a};
-
   cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
-                     sizeof(cl_double) * kernWidth * kernWidth);
+                     sizeof(cl_double) * convKernels.size() *
+                         args.fKernelWidth * args.fKernelWidth);
+  // box 5x5
+  // cl_long kernWidth = 5;
+  // cl_double a = 1.0 / (cl_double)(kernWidth * kernWidth);
+  // cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
+  //                         a, a, a, a, a, a, a, a, a, a, a, a};
+  // cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
+  //                    sizeof(cl_double) * kernWidth * kernWidth);
 
   cl::CommandQueue queue(context, default_device);
 
-  err = queue.enqueueWriteBuffer(
-      kernbuf, CL_TRUE, 0, sizeof(cl_double) * kernWidth * kernWidth, convKern);
+  err = queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
+                                 sizeof(cl_double) * convKernels.size() *
+                                     args.fKernelWidth * args.fKernelWidth,
+                                 &convKernels[0][0]);
   checkError(err);
 
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
@@ -199,7 +202,9 @@ int main(int argc, char* argv[]) {
       conv{program, "conv"};
   cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                         cl::NullRange};
-  conv(eargs, kernbuf, kernWidth, imgbuf, outimgbuf, w, h);
+  std::cout << "Debug 1" << std::endl;
+  conv(eargs, kernbuf, args.fKernelWidth, imgbuf, outimgbuf, w, h);
+  std::cout << "Debug 2" << std::endl;
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
