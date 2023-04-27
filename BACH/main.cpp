@@ -13,11 +13,16 @@ int main(int argc, char* argv[]) {
   CCfits::FITS::setVerboseMode(true);
 
   try {
+    std::cout << "Reading in arguments..." << std::endl;
     getArguments(argc, argv);
   } catch(const std::invalid_argument& err) {
     std::cout << err.what() << '\n';
     return 1;
   }
+
+  std::cout << std::endl;
+
+  std::cout << "Reading in images..." << std::endl;
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
@@ -36,12 +41,6 @@ int main(int argc, char* argv[]) {
   checkError(err);
   maskInput(scienceImg);
 
-  cl::Device default_device{get_default_device()};
-  cl::Context context{default_device};
-
-  cl::Program program =
-      load_build_programs(context, default_device, "conv.cl", "sub.cl");
-
   auto [w, h] = templateImg.axis;
   if(w != scienceImg.axis.first || h != scienceImg.axis.second) {
     std::cout << "Template image and science image must be the same size!"
@@ -50,7 +49,21 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  std::cout << std::endl;
+
+  std::cout << "Setting up openCL..." << std::endl;
+
+  cl::Device default_device{get_default_device()};
+  cl::Context context{default_device};
+
+  cl::Program program =
+      load_build_programs(context, default_device, "conv.cl", "sub.cl");
+
+  std::cout << std::endl;
+
   /* ===== SSS ===== */
+
+  std::cout << "Creating stamps..." << std::endl;
 
   std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
@@ -98,17 +111,21 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  std::cout << std::endl;
+
   /* ===== CMV ===== */
 
   std::cout << "Calculating matrix variables..." << std::endl;
+
   Kernel convolutionKernel{};
-  std::cout << "Kernel done" << std::endl;
   for(auto& s : templateStamps) {
     fillStamp(s, templateImg, scienceImg, convolutionKernel);
   }
   for(auto& s : sciStamps) {
     fillStamp(s, scienceImg, templateImg, convolutionKernel);
   }
+
+  std::cout << std::endl;
 
   /* ===== CD ===== */
 
@@ -126,12 +143,18 @@ int main(int argc, char* argv[]) {
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
+  std::cout << std::endl;
+
   /* ===== KSC ===== */
+
   std::cout << "Fitting kernel..." << std::endl;
 
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 
+  std::cout << std::endl;
+
   /* ===== Conv ===== */
+
   std::cout << "Convolving..." << std::endl;
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
@@ -169,8 +192,12 @@ int main(int argc, char* argv[]) {
                                 sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
+  std::cout << std::endl;
+
   err = writeImage(outImg);
   checkError(err);
+
+  std::cout << "Subtracting images..." << std::endl;
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
   sub(eargs, outimgbuf, imgbuf, diffimgbuf);
@@ -180,8 +207,15 @@ int main(int argc, char* argv[]) {
                                 sizeof(cl_double) * w * h, &diffImg);
   checkError(err);
 
+  std::cout << std::endl;
+
+  std::cout << "Writing output..." << std::endl;
+
   err = writeImage(diffImg);
   checkError(err);
 
+  std::cout << std::endl;
+
+  std::cout << "BACH finished." << std::endl;
   return 0;
 }
