@@ -61,10 +61,8 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
-        if(img.masked(i, j + y, Image::nan))
-          tmp.back() += 1e-10 * k.filterY[n][args.hKernelWidth - y];
-        else
-          tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+        cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
   }
