@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Convolving..." << std::endl;
 
-  std::vector<std::vector<cl_double>> convKernels{};
+  std::vector<cl_double> convKernels{};
   int xSteps =
       std::ceil((templateImg.axis.first) / cl_double(args.fKernelWidth));
   int ySteps =
@@ -167,7 +167,9 @@ int main(int argc, char* argv[]) {
     for(int y = 0; y < ySteps; y++) {
       int imgY = y * ySteps + args.hKernelWidth;
       makeKernel(convolutionKernel, templateImg.axis, imgX, imgY);
-      convKernels.push_back(convolutionKernel.currKernel);
+      convKernels.insert(convKernels.end(),
+                         convolutionKernel.currKernel.begin(),
+                         convolutionKernel.currKernel.end());
     }
   }
 
@@ -175,8 +177,8 @@ int main(int argc, char* argv[]) {
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
-                     sizeof(cl_double) * convKernels.size() *
-                         args.fKernelWidth * args.fKernelWidth);
+                     sizeof(cl_double) * convKernels.size());
+
   // box 5x5
   // cl_long kernWidth = 5;
   // cl_double a = 1.0 / (cl_double)(kernWidth * kernWidth);
@@ -188,9 +190,8 @@ int main(int argc, char* argv[]) {
   cl::CommandQueue queue(context, default_device);
 
   err = queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
-                                 sizeof(cl_double) * convKernels.size() *
-                                     args.fKernelWidth * args.fKernelWidth,
-                                 &convKernels[0][0]);
+                                 sizeof(cl_double) * convKernels.size(),
+                                 &convKernels[0]);
   checkError(err);
 
   err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
