@@ -249,8 +249,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
         tmp[intIndex] = diff;
       }
       if(std::isnan(tDat) || std::isnan(img[absIndex])) {
-        img.maskPix(absX, absY, Image::badInput);
-        img.maskPix(absX, absY, Image::nan);
+        img.maskPix(absX, absY, Image::badInput, Image::nan);
         continue;
       }
 
@@ -312,7 +311,7 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
     }
 
     for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {
-      model[i] = coeff * s.W[i][j];
+      model[i] += coeff * s.W[i][j];
     }
   }
 
@@ -359,7 +358,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     if(!s.subStamps.empty()) {
       cl_double sig = calcSig(s, k.solution, tImg);
 
-      if(std::isnan(sig) || sig == -1) {
+      if(sig == -1) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;
