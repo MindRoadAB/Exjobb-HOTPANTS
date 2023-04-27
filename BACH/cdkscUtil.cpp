@@ -210,8 +210,9 @@ std::vector<cl_double> createScProd(
         for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
           int index = x + args.hSStampWidth +
                       args.fSStampWidth * (y + args.hSStampWidth);
-          q += s.W[nComp1 + bgIndex + 1][index] *
-               img[x + ssx + (y + ssy) * img.axis.first];
+          if(!img.masked(x + ssx, y + ssy, Image::nan))
+            q += s.W[nComp1 + bgIndex + 1][index] *
+                 img[x + ssx + (y + ssy) * img.axis.first];
         }
       }
       res[nComp1 * nComp2 + bgIndex + 2] += q;
@@ -241,7 +242,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
       cl_double tDat = tmp[intIndex];
 
       cl_double diff = tDat - img[absIndex] + background;
-      if(img.masked(absX, absY, Image::badInput) ||
+      if(img.masked(absX, absY, Image::badInput, Image::nan) ||
          std::abs(img[absIndex]) <= 1e-10) {
         continue;
       } else {

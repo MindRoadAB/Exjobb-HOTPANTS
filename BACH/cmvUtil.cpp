@@ -15,7 +15,10 @@ void createB(Stamp& s, Image& img) {
         int k =
             x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
         int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-        p0 += s.W[i][k] * img[imgIndex];
+        if(img.masked(x + ssx, y + ssy, Image::nan))
+          p0 += s.W[i][k] * 1e-10;
+        else
+          p0 += s.W[i][k] * img[imgIndex];
       }
     }
     s.B.push_back(p0);
@@ -27,7 +30,10 @@ void createB(Stamp& s, Image& img) {
       int k =
           x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
       int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-      q += s.W[args.nPSF][k] * img[imgIndex];
+      if(img.masked(x + ssx, y + ssy, Image::nan))
+        q += s.W[args.nPSF][k] * 1e-10;
+      else
+        q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
   s.B.push_back(q);
@@ -55,7 +61,10 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
-        tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+        if(img.masked(i, j + y, Image::nan))
+          tmp.back() += 1e-10 * k.filterY[n][args.hKernelWidth - y];
+        else
+          tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
       }
     }
   }
