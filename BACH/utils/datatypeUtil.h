@@ -200,9 +200,9 @@ struct Image {
   std::pair<cl_long, cl_long> axis;
 
   enum masks { nan, badInput, badPixel, psf, edge };
+  std::vector<cl_double> data{};
 
  private:
-  std::vector<cl_double> data{};
   std::vector<bool> nanMask{};
   std::vector<bool> badInputMask{};
   std::vector<bool> badPixelMask{};

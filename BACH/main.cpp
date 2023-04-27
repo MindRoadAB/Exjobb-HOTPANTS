@@ -137,8 +137,8 @@ int main(int argc, char* argv[]) {
     std::cout << "template merit value = " << templateMerit
               << ", science merit value = " << scienceMerit << std::endl;
   if(scienceMerit < templateMerit) {
-    std::swap(scienceImg, templateImg);
-    std::swap(sciStamps, templateStamps);
+    // std::swap(scienceImg, templateImg);
+    // std::swap(sciStamps, templateStamps);
   }
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
@@ -174,6 +174,7 @@ int main(int argc, char* argv[]) {
   }
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
@@ -212,6 +213,13 @@ int main(int argc, char* argv[]) {
                                 sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] +=
+          getBackground(x, y, convolutionKernel.solution, templateImg.axis);
+    }
+  }
+
   std::cout << std::endl;
 
   err = writeImage(outImg);
@@ -219,8 +227,12 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Subtracting images..." << std::endl;
 
+  err = queue.enqueueWriteBuffer(convimgbuf, CL_TRUE, 0,
+                                 sizeof(cl_double) * w * h, &outImg);
+  checkError(err);
+
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
-  sub(eargs, outimgbuf, imgbuf, diffimgbuf);
+  sub(eargs, convimgbuf, imgbuf, diffimgbuf);
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
