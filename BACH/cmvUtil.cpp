@@ -6,8 +6,7 @@ void createB(Stamp& s, Image& img) {
   /* Does Equation 2.13 which create the right side of the Equation Ma=B */
 
   s.B.emplace_back();
-  int ssx = s.subStamps[0].imageCoords.first;
-  int ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int i = 0; i < args.nPSF; i++) {
     cl_double p0 = 0.0;
@@ -16,7 +15,10 @@ void createB(Stamp& s, Image& img) {
         int k =
             x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
         int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-        p0 += s.W[i][k] * img[imgIndex];
+        if(img.masked(x + ssx, y + ssy, Image::nan))
+          p0 += s.W[i][k] * 1e-10;
+        else
+          p0 += s.W[i][k] * img[imgIndex];
       }
     }
     s.B.push_back(p0);
@@ -28,7 +30,10 @@ void createB(Stamp& s, Image& img) {
       int k =
           x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
       int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-      q += s.W[args.nPSF][k] * img[imgIndex];
+      if(img.masked(x + ssx, y + ssy, Image::nan))
+        q += s.W[args.nPSF][k] * 1e-10;
+      else
+        q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
   s.B.push_back(q);
@@ -43,8 +48,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
    */
 
   s.W.emplace_back();
-  cl_long ssx = s.subStamps[0].imageCoords.first;
-  cl_long ssy = s.subStamps[0].imageCoords.second;
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   std::vector<cl_double> tmp{};
 
@@ -57,7 +61,8 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
-        tmp.back() += img[imgIndex] * k.filterY[n][args.hKernelWidth - y];
+        cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
   }
@@ -99,7 +104,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
   }
 }
 
-void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
+int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   /* Fills Substamp with gaussian basis convolved images around said substamp
    * and claculates CMV.
    */
@@ -108,10 +113,11 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       std::cout << "No eligable substamps in stamp at x = " << s.coords.first
                 << " y = " << s.coords.second << ", stamp rejected"
                 << std::endl;
-    return;
+    return 1;
   }
 
   int nvec = 0;
+  s.W = std::vector<std::vector<cl_double>>();
   for(int g = 0; g < cl_int(args.dg.size()); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
@@ -129,8 +135,12 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   cutSStamp(s.subStamps[0], sImg);
 
-  cl_long ssx = s.subStamps[0].imageCoords.first;
-  cl_long ssy = s.subStamps[0].imageCoords.second;
+  while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
+    s.subStamps.erase(s.subStamps.begin());
+    cutSStamp(s.subStamps[0], sImg);
+  }
+
+  auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int j = 0; j <= args.backgroundOrder; j++) {
     for(int k = 0; k <= args.backgroundOrder - j; k++) {
@@ -155,4 +165,6 @@ void fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   s.createQ();  // TODO: is name accurate?
   createB(s, sImg);
+
+  return 0;
 }

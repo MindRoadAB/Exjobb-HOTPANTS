@@ -135,6 +135,7 @@ struct StampStats {
   cl_double fwhm{};    // Middle part value diff (full width half max)
   cl_double norm{};
   cl_double diff{};
+  cl_double chi2{};
 };
 
 struct Stamp {
@@ -286,47 +287,50 @@ struct Image {
     return retVal;
   }
 
-  void maskPix(int x, int y, masks m) {
-    switch(m) {
-      case nan:
-        nanMask[x + (y * axis.first)] = true;
-        return;
-      case badInput:
-        badInputMask[x + (y * axis.first)] = true;
-        return;
-      case badPixel:
-        badPixelMask[x + (y * axis.first)] = true;
-        return;
-      case psf:
-        psfMask[x + (y * axis.first)] = true;
-        return;
-      case edge:
-        edgeMask[x + (y * axis.first)] = true;
-        return;
-      default:
-        std::cout << "Error: Not caught by the switch case" << std::endl;
-        exit(1);
+  void maskPix(int x, int y, std::same_as<Image::masks> auto... mI) {
+    std::vector<Image::masks> mL{mI...};
+    for(Image::masks m : mL) {
+      switch(m) {
+        case nan:
+          nanMask[x + (y * axis.first)] = true;
+          return;
+        case badInput:
+          badInputMask[x + (y * axis.first)] = true;
+          return;
+        case badPixel:
+          badPixelMask[x + (y * axis.first)] = true;
+          return;
+        case psf:
+          psfMask[x + (y * axis.first)] = true;
+          return;
+        case edge:
+          edgeMask[x + (y * axis.first)] = true;
+          return;
+        default:
+          std::cout << "Error: Not caught by the switch case" << std::endl;
+          exit(1);
+      }
     }
   }
 
-  void maskSStamp(SubStamp& sstamp, masks m) {
+  void maskSStamp(SubStamp& sstamp, std::same_as<Image::masks> auto... mI) {
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
         x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
       for(int y = sstamp.imageCoords.second - args.hSStampWidth;
           y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
-        this->maskPix(x, y, m);
+        this->maskPix(x, y, mI...);
       }
     }
   }
 
-  void maskAroundPix(int inX, int inY, masks m) {
+  void maskAroundPix(int inX, int inY, std::same_as<Image::masks> auto... mI) {
     for(int x = inX - args.hSStampWidth; x <= inX + args.hSStampWidth; x++) {
       if(x < 0 || x >= axis.first) continue;
       for(int y = inY - args.hSStampWidth; y <= inY + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
-        this->maskPix(x, y, m);
+        this->maskPix(x, y, mI...);
       }
     }
   }
