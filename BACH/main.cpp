@@ -158,6 +158,18 @@ int main(int argc, char* argv[]) {
   std::cout << "Convolving..." << std::endl;
 
   std::vector<std::vector<cl_double>> convKernels{};
+  int xSteps =
+      std::ceil((templateImg.axis.first) / cl_double(args.fKernelWidth));
+  int ySteps =
+      std::ceil((templateImg.axis.second) / cl_double(args.fKernelWidth));
+  for(int x = 0; x < xSteps; x++) {
+    int imgX = x * xSteps + args.hKernelWidth;
+    for(int y = 0; y < ySteps; y++) {
+      int imgY = y * ySteps + args.hKernelWidth;
+      makeKernel(convolutionKernel, templateImg.axis, imgX, imgY);
+      convKernels.push_back(convolutionKernel.currKernel);
+    }
+  }
 
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
