@@ -157,6 +157,8 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Convolving..." << std::endl;
 
+  std::vector<std::vector<cl_double>> convKernels{};
+
   cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
