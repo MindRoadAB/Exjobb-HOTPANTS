@@ -311,7 +311,7 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
     }
 
     for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {
-      model[i] = coeff * s.W[i][j];
+      model[i] += coeff * s.W[i][j];
     }
   }
 
