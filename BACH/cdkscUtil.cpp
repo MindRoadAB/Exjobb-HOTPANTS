@@ -248,8 +248,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
         tmp[intIndex] = diff;
       }
       if(std::isnan(tDat) || std::isnan(img[absIndex])) {
-        img.maskPix(absX, absY, Image::badInput);
-        img.maskPix(absX, absY, Image::nan);
+        img.maskPix(absX, absY, Image::badInput, Image::nan);
         continue;
       }
 
