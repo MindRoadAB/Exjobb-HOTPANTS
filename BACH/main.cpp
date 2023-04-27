@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Calculating matrix variables..." << std::endl;
   Kernel convolutionKernel{};
+  std::cout << "Kernel done" << std::endl;
   for(auto& s : templateStamps) {
     fillStamp(s, templateImg, scienceImg, convolutionKernel);
   }
@@ -126,7 +127,7 @@ int main(int argc, char* argv[]) {
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
   /* ===== KSC ===== */
-  if(args.verbose) std::cout << "Fitting kernel..." << std::endl;
+  std::cout << "Fitting kernel..." << std::endl;
 
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 

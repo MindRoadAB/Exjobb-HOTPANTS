@@ -242,7 +242,7 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
       cl_double tDat = tmp[intIndex];
 
       cl_double diff = tDat - img[absIndex] + background;
-      if(img.masked(absX, absY, Image::badInput, Image::nan) ||
+      if(img.masked(absX, absY, Image::badInput) ||
          std::abs(img[absIndex]) <= 1e-10) {
         continue;
       } else {
