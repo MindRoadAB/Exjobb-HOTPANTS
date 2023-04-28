@@ -380,5 +380,11 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     }
   }
 
+  int cnt = 0;
+  for(auto s : stamps) {
+    if(!s.subStamps.empty()) cnt++;
+  }
+  std::cout << "We use " << cnt << " sub-stamps" << std::endl;
+
   return check;
 }
