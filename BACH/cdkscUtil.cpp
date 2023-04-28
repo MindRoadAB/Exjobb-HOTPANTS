@@ -242,14 +242,14 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& tImg,
       int absIndex = absX + absY * tImg.axis.first;
       cl_double tDat = tmp[intIndex];
 
-      cl_double diff = tDat - tImg[absIndex] + background;
+      cl_double diff = tDat - sImg[absIndex] + background;
       if(tImg.masked(absX, absY, Image::badInput) ||
-         std::abs(tImg[absIndex]) <= 1e-10) {
+         std::abs(sImg[absIndex]) <= 1e-10) {
         continue;
       } else {
         tmp[intIndex] = diff;
       }
-      if(std::isnan(tDat) || std::isnan(tImg[absIndex])) {
+      if(std::isnan(tDat) || std::isnan(sImg[absIndex])) {
         tImg.maskPix(absX, absY, Image::badInput, Image::nan);
         continue;
       }
