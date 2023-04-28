@@ -377,9 +377,9 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
 
   for(int i = 1; i < args.nPSF; i++) {
     double aX = 1.0;
-    for(int iX = 0; iX < -args.kernelOrder; iX++) {
+    for(int iX = 0; iX <= args.kernelOrder; iX++) {
       double aY = 1.0;
-      for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
+      for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
         aY *= cl_double(y - hImgAxis.second) / hImgAxis.second;
       }

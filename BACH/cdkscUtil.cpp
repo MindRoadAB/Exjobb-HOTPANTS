@@ -274,7 +274,7 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                    (((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2) +
                1;
   cl_double bg = 0.0;
-  int xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.second);
+  int xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.first);
   int yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
 
   cl_double ax = 1.0;
@@ -303,9 +303,9 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
 
   for(int i = 1, k = 2; i < args.nPSF; i++) {
     double aX = 1.0, coeff = 0.0;
-    for(int iX = 0; iX < -args.kernelOrder; iX++) {
+    for(int iX = 0; iX <= args.kernelOrder; iX++) {
       double aY = 1.0;
-      for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
+      for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         coeff += kernSol[k++] * aX * aY;
         aY *= cl_double(ssy - hImgAxis.second) / hImgAxis.second;
       }
@@ -313,7 +313,7 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
     }
 
     for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {
-      model[i] += coeff * s.W[i][j];
+      model[j] += coeff * s.W[i][j];
     }
   }
 
