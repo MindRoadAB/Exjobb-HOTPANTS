@@ -2,7 +2,7 @@
 
 #include "utils/bachUtil.h"
 
-cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
+cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
@@ -55,8 +55,8 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
   }
 
   // do fit
-  auto [matrix, weight] = createMatrix(testStamps, img.axis);
-  std::vector<cl_double> testKernSol = createScProd(testStamps, img, weight);
+  auto [matrix, weight] = createMatrix(testStamps, tImg.axis);
+  std::vector<cl_double> testKernSol = createScProd(testStamps, sImg, weight);
 
   double d;
   ludcmp(matrix, matSize, index, d);
@@ -64,14 +64,14 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& img) {
 
   Kernel testKern{};
   testKern.solution = testKernSol;
-  kernelMean = makeKernel(testKern, img.axis, 0, 0);
+  kernelMean = makeKernel(testKern, tImg.axis, 0, 0);
 
   // calc merit value
   std::vector<cl_double> merit(testStamps.size(), 0.0);
   cl_double sig{};
   count = 0;
   for(auto& ts : testStamps) {
-    sig = calcSig(ts, testKern.solution, img);
+    sig = calcSig(ts, testKern.solution, tImg, sImg);
     if(sig != -1 && sig <= 1e10) merit[count++] = sig;
   }
   cl_double meritMean, meritStdDev;
@@ -223,12 +223,13 @@ std::vector<cl_double> createScProd(
   return res;
 }
 
-cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
+cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& tImg,
+                  Image& sImg) {
   if(s.subStamps.empty()) return -1.0;
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-  cl_double background = getBackground(ssx, ssy, kernSol, img.axis);
-  std::vector<cl_double> tmp{makeModel(s, kernSol, img.axis)};
+  cl_double background = getBackground(ssx, ssy, kernSol, tImg.axis);
+  std::vector<cl_double> tmp{makeModel(s, kernSol, tImg.axis)};
 
   int sigCount = 0;
   cl_double signal = 0.0;
@@ -238,23 +239,24 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& img) {
       int absX = x - args.hSStampWidth + ssx;
 
       int intIndex = x + y * args.fSStampWidth;
-      int absIndex = absX + absY * img.axis.first;
+      int absIndex = absX + absY * tImg.axis.first;
       cl_double tDat = tmp[intIndex];
 
-      cl_double diff = tDat - img[absIndex] + background;
-      if(img.masked(absX, absY, Image::badInput) ||
-         std::abs(img[absIndex]) <= 1e-10) {
+      cl_double diff = tDat - tImg[absIndex] + background;
+      if(tImg.masked(absX, absY, Image::badInput) ||
+         std::abs(tImg[absIndex]) <= 1e-10) {
         continue;
       } else {
         tmp[intIndex] = diff;
       }
-      if(std::isnan(tDat) || std::isnan(img[absIndex])) {
-        img.maskPix(absX, absY, Image::badInput, Image::nan);
+      if(std::isnan(tDat) || std::isnan(tImg[absIndex])) {
+        tImg.maskPix(absX, absY, Image::badInput, Image::nan);
         continue;
       }
 
       sigCount++;
-      signal += diff * diff / (std::abs(img[absIndex]) * 2);
+      signal +=
+          diff * diff / (std::abs(tImg[absIndex]) + std::abs(sImg[absIndex]));
     }
   }
   if(sigCount > 0) {
@@ -356,7 +358,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
-      cl_double sig = calcSig(s, k.solution, tImg);
+      cl_double sig = calcSig(s, k.solution, tImg, sImg);
 
       if(sig == -1) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));

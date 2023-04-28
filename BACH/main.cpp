@@ -131,14 +131,14 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Choosing convolution direction..." << std::endl;
 
-  cl_double templateMerit = testFit(templateStamps, templateImg);
-  cl_double scienceMerit = testFit(sciStamps, scienceImg);
+  cl_double templateMerit = testFit(templateStamps, templateImg, scienceImg);
+  cl_double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
   if(args.verbose)
     std::cout << "template merit value = " << templateMerit
               << ", science merit value = " << scienceMerit << std::endl;
   if(scienceMerit < templateMerit) {
-    // std::swap(scienceImg, templateImg);
-    // std::swap(sciStamps, templateStamps);
+    std::swap(scienceImg, templateImg);
+    std::swap(sciStamps, templateStamps);
   }
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
@@ -173,20 +173,14 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  cl::Buffer imgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * convKernels.size());
 
-  // box 5x5
-  // cl_long kernWidth = 5;
-  // cl_double a = 1.0 / (cl_double)(kernWidth * kernWidth);
-  // cl_double convKern[] = {a, a, a, a, a, a, a, a, a, a, a, a, a,
-  //                         a, a, a, a, a, a, a, a, a, a, a, a};
-  // cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
-  //                    sizeof(cl_double) * kernWidth * kernWidth);
+  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   cl::CommandQueue queue(context, default_device);
 
@@ -195,7 +189,7 @@ int main(int argc, char* argv[]) {
                                  &convKernels[0]);
   checkError(err);
 
-  err = queue.enqueueWriteBuffer(imgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+  err = queue.enqueueWriteBuffer(timgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
                                  &templateImg);
   checkError(err);
 
@@ -204,9 +198,7 @@ int main(int argc, char* argv[]) {
       conv{program, "conv"};
   cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                         cl::NullRange};
-  std::cout << "Debug 1" << std::endl;
-  conv(eargs, kernbuf, args.fKernelWidth, imgbuf, outimgbuf, w, h);
-  std::cout << "Debug 2" << std::endl;
+  conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
@@ -231,8 +223,12 @@ int main(int argc, char* argv[]) {
                                  sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
+  err = queue.enqueueWriteBuffer(simgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 &scienceImg);
+  checkError(err);
+
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
-  sub(eargs, convimgbuf, imgbuf, diffimgbuf);
+  sub(eargs, simgbuf, convimgbuf, diffimgbuf);
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,

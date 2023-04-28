@@ -39,14 +39,15 @@ void cutSStamp(SubStamp&, Image&);
 int fillStamp(Stamp&, Image& tImg, Image& sImg, Kernel&);
 
 /* CD && KSC */
-cl_double testFit(std::vector<Stamp>& stamps, Image&);
+cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg);
 std::pair<std::vector<std::vector<cl_double>>,
           std::vector<std::vector<cl_double>>>
 createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize);
 std::vector<cl_double> createScProd(
     std::vector<Stamp>& stamps, Image&,
     std::vector<std::vector<cl_double>>& weight);
-cl_double calcSig(Stamp&, std::vector<cl_double>& kernSol, Image&);
+cl_double calcSig(Stamp&, std::vector<cl_double>& kernSol, Image& tImg,
+                  Image& sImg);
 cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
                         std::pair<cl_long, cl_long> imgSize);
 std::vector<cl_double> makeModel(Stamp&, std::vector<cl_double>& kernSol,
