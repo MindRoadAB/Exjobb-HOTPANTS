@@ -28,14 +28,10 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
         }
       }
 
-      if(ludcmp(testMat, args.nPSF + 1, index, d)) {
-        s.stats.norm = 1e10;
-      } else {
-        lubksb(testMat, args.nPSF + 1, index, testVec);
-        s.stats.norm = testVec[1];
-        kernelSum[count] = testVec[1];
-        count++;
-      }
+      ludcmp(testMat, args.nPSF + 1, index, d);
+      lubksb(testMat, args.nPSF + 1, index, testVec);
+      s.stats.norm = testVec[1];
+      kernelSum[count++] = testVec[1];
     }
   }
 
@@ -67,12 +63,12 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   kernelMean = makeKernel(testKern, tImg.axis, 0, 0);
 
   // calc merit value
-  std::vector<cl_double> merit(testStamps.size(), 0.0);
+  std::vector<cl_double> merit{};
   cl_double sig{};
   count = 0;
   for(auto& ts : testStamps) {
     sig = calcSig(ts, testKern.solution, tImg, sImg);
-    if(sig != -1 && sig <= 1e10) merit[count++] = sig;
+    if(sig != -1 && sig <= 1e10) merit.push_back(sig);
   }
   cl_double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
@@ -352,7 +348,7 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
 bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
                       Image& sImg) {
-  std::vector<cl_double> ssValues(stamps.size());
+  std::vector<cl_double> ssValues{};
 
   bool check = false;
 

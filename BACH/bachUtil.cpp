@@ -38,7 +38,9 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
    */
   if(data.empty()) {
     std::cout << "Cannot send in empty vector to Sigma Clip" << std::endl;
-    exit(1);
+    mean = 0.0;
+    stdDev = 1e10;
+    return;
   }
 
   size_t currNPoints = 0;
@@ -65,7 +67,9 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
     } else {
       std::cout << "prevNPoints is: " << prevNPoints
                 << "Needs to be greater than 1" << std::endl;
-      exit(1);
+      mean = 0.0;
+      stdDev = 1e10;
+      return;
     }
 
     prevNPoints = 0;
@@ -73,7 +77,7 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
     for(size_t i = 0; i < data.size(); i++) {
       if(!intMask[i]) {
         // Doing the sigmaClip
-        if(abs(data[i] - mean) * invStdDev > args.sigClipAlpha) {
+        if(std::abs(data[i] - mean) * invStdDev > args.sigClipAlpha) {
           intMask[i] = true;
         } else {
           prevNPoints++;

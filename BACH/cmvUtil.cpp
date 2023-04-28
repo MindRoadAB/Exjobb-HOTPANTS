@@ -15,10 +15,10 @@ void createB(Stamp& s, Image& img) {
         int k =
             x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
         int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-        if(img.masked(x + ssx, y + ssy, Image::nan))
-          p0 += s.W[i][k] * 1e-10;
-        else
-          p0 += s.W[i][k] * img[imgIndex];
+        // if(img.masked(x + ssx, y + ssy, Image::nan))
+        //   p0 += s.W[i][k] * 1e-10;
+        // else
+        p0 += s.W[i][k] * img[imgIndex];
       }
     }
     s.B.push_back(p0);
@@ -30,10 +30,10 @@ void createB(Stamp& s, Image& img) {
       int k =
           x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
       int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-      if(img.masked(x + ssx, y + ssy, Image::nan))
-        q += s.W[args.nPSF][k] * 1e-10;
-      else
-        q += s.W[args.nPSF][k] * img[imgIndex];
+      // if(img.masked(x + ssx, y + ssy, Image::nan))
+      //   q += s.W[args.nPSF][k] * 1e-10;
+      // else
+      q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
   s.B.push_back(q);
@@ -61,7 +61,8 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
-        cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        // cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        cl_double v = img[imgIndex];
         tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
@@ -97,7 +98,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
       int imgX = ss.imageCoords.first + x - args.hSStampWidth;
 
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
-      ss.sum += img.masked(imgX, imgY, Image::badInput, Image::nan)
+      ss.sum += img.masked(imgX, imgY, Image::badInput)
                     ? 0.0
                     : abs(img[imgX + imgY * img.axis.first]);
     }
@@ -135,10 +136,10 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   cutSStamp(s.subStamps[0], sImg);
 
-  while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
-    s.subStamps.erase(s.subStamps.begin());
-    cutSStamp(s.subStamps[0], sImg);
-  }
+  // while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
+  //   s.subStamps.erase(s.subStamps.begin());
+  //   cutSStamp(s.subStamps[0], sImg);
+  // }
 
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
@@ -156,9 +157,9 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
         cl_double ay = 1.0;
         for(int k = 0; k <= args.backgroundOrder - j; k++) {
           s.W[args.nPSF + nBGVec++].push_back(ax * ay);
-          ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
+          ay *= (y - tImg.axis.second * 0.5) / (tImg.axis.second * 0.5);
         }
-        ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
+        ax *= (x - tImg.axis.first * 0.5) / (tImg.axis.first * 0.5);
       }
     }
   }
