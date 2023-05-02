@@ -323,8 +323,9 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   int matSize = nComp1 * nComp2 + nBGComp + 1;
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
-  std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
-  std::cout << "values at 209 on: " << solution[290] << ", " << solution[291]
+  std::vector<cl_double> solution =
+      createScProd(stamps, sImg, weight);  // TODO: continue from here.
+  std::cout << "values at 290 on: " << solution[290] << ", " << solution[291]
             << ", " << solution[292] << std::endl;
 
   std::vector<int> index(matSize, 0);
