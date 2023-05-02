@@ -66,13 +66,17 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
   double retVal = 0.0;
   for(int y = sstamp.imageCoords.second - args.hSStampWidth;
       y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
-    if(y < 0 || y >= image.axis.second) continue;
+    if(y < stamp.coords.second || y >= stamp.coords.second + stamp.size.second)
+      continue;
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
         x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
-      if(x < 0 || x >= image.axis.first) continue;
+      if(x < stamp.coords.first || x >= stamp.coords.first + stamp.size.first)
+        continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y, Image::badPixel, Image::psf)) return 0.0;
+      if(image.masked(x, y, Image::badPixel, Image::psf, Image::nan,
+                      Image::badInput, Image::edge))
+        return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
         image.maskPix(x, y, Image::badPixel);
@@ -134,13 +138,13 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                 continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image[kCoords] >= args.threshHigh) {
-                image.maskPix(kx, ky, Image::badPixel);
+              if(image.masked(kx, ky, Image::badPixel, Image::psf,
+                              Image::edge)) {
                 continue;
               }
 
-              if(image.masked(kx, ky, Image::badPixel, Image::psf,
-                              Image::edge)) {
+              if(image[kCoords] >= args.threshHigh) {
+                image.maskPix(kx, ky, Image::badPixel);
                 continue;
               }
 
@@ -159,7 +163,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
             }
           }
           s.val = checkSStamp(s, image, stamp);
-          if(s.val == 0) continue;
+          if(s.val == 0.0) continue;
           stamp.subStamps.push_back(s);
           image.maskSStamp(s, Image::psf);
         }
