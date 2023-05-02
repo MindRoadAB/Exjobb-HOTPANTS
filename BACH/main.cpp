@@ -35,15 +35,10 @@ int main(int argc, char* argv[]) {
 
   err = readImage(templateImg);
   checkError(err);
-  std::cout << "hello" << std::endl;
-  // TODO: Maybe do maskInput in parallel?
-  maskInput(templateImg);
-  std::cout << "hello" << std::endl;
   err = readImage(scienceImg);
   checkError(err);
-  std::cout << "hello" << std::endl;
-  maskInput(scienceImg);
-  std::cout << "hello" << std::endl;
+
+  maskInput(templateImg, scienceImg);
 
   auto [w, h] = templateImg.axis;
   if(w != scienceImg.axis.first || h != scienceImg.axis.second) {

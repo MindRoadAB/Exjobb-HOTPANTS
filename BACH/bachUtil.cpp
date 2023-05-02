@@ -9,19 +9,27 @@ void checkError(cl_int err) {
   }
 }
 
-void maskInput(Image& img) {
-  for(long y = 0; y < img.axis.second; y++) {
-    for(long x = 0; x < img.axis.first; x++) {
-      long index = x + y * img.axis.first;
+void maskInput(Image& tImg, Image& sImg) {
+  for(long y = 0; y < tImg.axis.second; y++) {
+    for(long x = 0; x < tImg.axis.first; x++) {
+      long index = x + y * tImg.axis.first;
       int borderSize = args.hSStampWidth + args.hKernelWidth;
-      if(x < borderSize || x > img.axis.first - borderSize || y < borderSize ||
-         y > img.axis.second - borderSize)
-        img.maskPix(x, y, Image::edge);
-      if(img[index] >= args.threshHigh || img[index] <= args.threshLow) {
-        img.maskAroundPix(x, y, Image::badInput);
+
+      if(x < borderSize || x > tImg.axis.first - borderSize || y < borderSize ||
+         y > tImg.axis.second - borderSize) {
+        tImg.maskPix(x, y, Image::edge);
+        sImg.maskPix(x, y, Image::edge);
       }
-      if(std::isnan(img[index])) {
-        img.maskPix(x, y, Image::nan);
+
+      if(std::max(tImg[index], sImg[index]) >= args.threshHigh ||
+         std::min(tImg[index], sImg[index]) <= args.threshLow) {
+        tImg.maskAroundPix(x, y, Image::badInput);
+        sImg.maskAroundPix(x, y, Image::badInput);
+      }
+
+      if(std::isnan(tImg[index]) || std::isnan(sImg[index])) {
+        tImg.maskPix(x, y, Image::nan);
+        sImg.maskPix(x, y, Image::nan);
       }
     }
   }

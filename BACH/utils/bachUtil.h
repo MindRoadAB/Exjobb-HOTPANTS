@@ -14,7 +14,7 @@
 
 /* Utils */
 void checkError(cl_int err);
-void maskInput(Image&);
+void maskInput(Image& tImg, Image& sImg);
 void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
                int iter);
 bool inImage(Image&, int x, int y);
