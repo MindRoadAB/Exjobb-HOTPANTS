@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
   if(args.verbose)
     std::cout << "template merit value = " << templateMerit
               << ", science merit value = " << scienceMerit << std::endl;
-  if(scienceMerit < templateMerit) {
+  if(scienceMerit <= templateMerit) {
     std::swap(scienceImg, templateImg);
     std::swap(sciStamps, templateStamps);
   }

@@ -192,7 +192,7 @@ std::vector<cl_double> createScProd(
     cl_double p0 = s.B[1];
     res[1] += p0;
 
-    for(int i = 1; i < nComp1; i++) {
+    for(int i = 1; i < nComp1 + 1; i++) {
       p0 = s.B[i + 1];
       for(int j = 0; j < nComp2; j++) {
         int indx = (i - 1) * nComp2 + j + 1;
@@ -206,9 +206,8 @@ std::vector<cl_double> createScProd(
         for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
           int index = x + args.hSStampWidth +
                       args.fSStampWidth * (y + args.hSStampWidth);
-          if(!img.masked(x + ssx, y + ssy, Image::nan))
-            q += s.W[nComp1 + bgIndex + 1][index] *
-                 img[x + ssx + (y + ssy) * img.axis.first];
+          q += s.W[nComp1 + bgIndex + 1][index] *
+               img[x + ssx + (y + ssy) * img.axis.first];
         }
       }
       res[nComp1 * nComp2 + bgIndex + 2] += q;
@@ -325,6 +324,8 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
   std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
+  std::cout << "values at 209 on: " << solution[290] << ", " << solution[291]
+            << ", " << solution[292] << std::endl;
 
   std::vector<int> index(matSize, 0);
   cl_double d{};
