@@ -26,22 +26,12 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
 
   for(int j = 0; j < args.stampsy; j++) {
     for(int i = 0; i < args.stampsx; i++) {
-      int stampw = w / args.stampsx;
-      int stamph = h / args.stampsy;
-      int startx = i * stampw;
-      int starty = j * stamph;
-      int stopx = startx + stampw;
-      int stopy = starty + stamph;
-
-      if(i == args.stampsx - 1) {
-        stopx = w;
-        stampw = stopx - startx;
-      }
-
-      if(j == args.stampsy - 1) {
-        stopy = h;
-        stamph = stopy - starty;
-      }
+      int startx = i * (double(w) / double(args.stampsx));
+      int starty = j * (double(h) / double(args.stampsy));
+      int stopx = std::min(startx + args.fStampWidth, w);
+      int stopy = std::min(starty + args.fStampWidth, h);
+      int stampw = stopx - startx;
+      int stamph = stopy - starty;
 
       int centerx = stampw / 2;
       int centery = stamph / 2;
