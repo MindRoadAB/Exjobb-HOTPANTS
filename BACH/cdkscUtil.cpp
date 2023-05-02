@@ -115,8 +115,8 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
       int i1 = i / nComp2;
       int i2 = i - i1 * nComp2;
       for(int j = 0; j <= i; j++) {
-        int j1 = i / nComp2;
-        int j2 = i - j1 * nComp2;
+        int j1 = j / nComp2;
+        int j2 = j - j1 * nComp2;
 
         matrix[i + 2][j + 2] +=
             weight[st][i2] * weight[st][j2] * s.Q[i1 + 2][j1 + 2];

@@ -100,7 +100,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
       ss.sum += img.masked(imgX, imgY, Image::badInput)
                     ? 0.0
-                    : abs(img[imgX + imgY * img.axis.first]);
+                    : std::abs(img[imgX + imgY * img.axis.first]);
     }
   }
 }
@@ -148,18 +148,19 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       s.W.emplace_back();
     }
   }
-
-  for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
-    for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
+  for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
+    double yf = (y - tImg.axis.second * 0.5) / (tImg.axis.second * 0.5);
+    for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
+      double xf = (x - tImg.axis.first * 0.5) / (tImg.axis.first * 0.5);
       cl_double ax = 1.0;
       cl_int nBGVec = 0;
       for(int j = 0; j <= args.backgroundOrder; j++) {
         cl_double ay = 1.0;
         for(int k = 0; k <= args.backgroundOrder - j; k++) {
           s.W[args.nPSF + nBGVec++].push_back(ax * ay);
-          ay *= (y - tImg.axis.second * 0.5) / (tImg.axis.second * 0.5);
+          ay *= yf;
         }
-        ax *= (x - tImg.axis.first * 0.5) / (tImg.axis.first * 0.5);
+        ax *= xf;
       }
     }
   }
