@@ -102,7 +102,7 @@ void calcStats(Stamp& stamp, Image& image) {
    * TODO: Compare results on same stamp on this and old version.
    */
 
-  double median, lfwhm, sum;  // temp for now
+  double median, sum;  // temp for now
 
   std::vector<double> values{};
   std::vector<cl_int> bins(256, 0);
@@ -278,7 +278,6 @@ void calcStats(Stamp& stamp, Image& image) {
   for(i = 0, sumBins = 0; sumBins < okCount / 2.0; sumBins += bins[i++])
     ;
   median = i - (sumBins - okCount / 2.0) / bins[i - 1];
-  lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
 }
 

@@ -70,7 +70,7 @@ struct Kernel {
 
     std::vector<double> temp{};
     std::vector<double> kern0{};
-    double sumX = 0, sumY = 0;
+    double sumX = 0.0, sumY = 0.0;
     // UNSURE: Don't really know why dx,dy are a thing
     cl_int dx = (stats[n].x / 2) * 2 - stats[n].x;
     cl_int dy = (stats[n].y / 2) * 2 - stats[n].y;

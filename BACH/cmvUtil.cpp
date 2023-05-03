@@ -50,7 +50,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
   s.W.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-  std::vector<double> tmp{};
+  std::vector<float> tmp{};
 
   // Convolve Image with filterY taking pixels in a (args.hSStampWidth +
   // args.hKernelWidth) area around a substamp.
@@ -62,7 +62,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
         // cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
-        double v = img[imgIndex];
+        float v = img[imgIndex];
         tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
@@ -135,11 +135,6 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   cutSStamp(s.subStamps[0], sImg);
-
-  // while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
-  //   s.subStamps.erase(s.subStamps.begin());
-  //   cutSStamp(s.subStamps[0], sImg);
-  // }
 
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
