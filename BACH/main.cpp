@@ -2,6 +2,7 @@
 
 #include <CL/opencl.hpp>
 #include <iostream>
+#include <iterator>
 #include <vector>
 
 #include "utils/argsUtil.h"
@@ -242,6 +243,18 @@ int main(int argc, char* argv[]) {
   checkError(err);
 
   std::cout << std::endl;
+
+  Image kernelImg{
+      "kern.fits",
+      std::make_pair(long(args.fKernelWidth), long(args.fKernelWidth)),
+      args.outPath};
+  std::vector<cl_double> kernel{
+      std::next(convKernels.begin(),
+                args.fKernelWidth * args.fKernelWidth * 500),
+      std::next(convKernels.begin(),
+                args.fKernelWidth * args.fKernelWidth * 501)};
+  kernelImg.data = kernel;
+  writeImage(kernelImg);
 
   std::cout << "BACH finished." << std::endl;
   return 0;

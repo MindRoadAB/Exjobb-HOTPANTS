@@ -323,8 +323,7 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   int matSize = nComp1 * nComp2 + nBGComp + 1;
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
-  std::vector<cl_double> solution =
-      createScProd(stamps, sImg, weight);  // TODO: continue from here.
+  std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
   std::cout << "values at 290 on: " << solution[290] << ", " << solution[291]
             << ", " << solution[292] << std::endl;
 
@@ -371,10 +370,15 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   cl_double mean = 0.0, stdDev = 0.0;
   sigmaClip(ssValues, mean, stdDev, 10);
+  std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
       if((s.stats.chi2 - mean) > args.threshKernFit * stdDev) {
+        if(args.verbose)
+          std::cout << "throwing out ss (" << s.subStamps[0].imageCoords.first
+                    << ", " << s.subStamps[0].imageCoords.second << ")"
+                    << std::endl;
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;
@@ -387,6 +391,13 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     if(!s.subStamps.empty()) cnt++;
   }
   std::cout << "We use " << cnt << " sub-stamps" << std::endl;
+  std::cout << "Remaining sub-stamps are:" << std::endl;
+  for(auto s : stamps) {
+    if(!s.subStamps.empty()) {
+      std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
+                << std::endl;
+    }
+  }
 
   return check;
 }
