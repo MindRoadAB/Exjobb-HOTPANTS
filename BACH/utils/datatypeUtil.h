@@ -236,7 +236,7 @@ struct Image {
 
   double* operator&() { return &data[0]; }
 
-  double operator[](size_t index) { return data[index]; }
+  double operator[](size_t index) { return float(data[index]); }
 
   std::string getFile() { return path + name; }
 
