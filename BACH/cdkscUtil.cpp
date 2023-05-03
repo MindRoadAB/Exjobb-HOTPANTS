@@ -87,7 +87,7 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   int matSize = nComp + nBGVectors + 1;
 
   int pixStamp = args.fSStampWidth * args.fSStampWidth;
-  int hPixX = imgSize.first / 2, hPixY = imgSize.second / 2;
+  float hPixX = imgSize.first / 2, hPixY = imgSize.second / 2;
 
   std::vector<std::vector<double>> matrix(
       matSize + 1, std::vector<double>(matSize + 1, 0.0));
@@ -100,14 +100,17 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
 
     auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
+    double fx = (ssx - hPixX) / hPixX;
+    double fy = (ssy - hPixY) / hPixY;
+
     double a1 = 1.0;
     for(int k = 0, i = 0; i <= int(args.kernelOrder); i++) {
       double a2 = 1.0;
       for(int j = 0; j <= int(args.kernelOrder) - i; j++) {
         weight[st][k++] = a1 * a2;
-        a2 *= double(ssy - hPixY) / hPixY;
+        a2 *= fy;
       }
-      a1 *= double(ssx - hPixX) / hPixX;
+      a1 *= fx;
     }
 
     for(int i = 0; i < nComp; i++) {
