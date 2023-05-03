@@ -144,9 +144,11 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
     }
   }
   for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
-    double yf = (y - tImg.axis.second * 0.5) / (tImg.axis.second * 0.5);
+    double yf =
+        (y - float(tImg.axis.second * 0.5)) / float(tImg.axis.second * 0.5);
     for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
-      double xf = (x - tImg.axis.first * 0.5) / (tImg.axis.first * 0.5);
+      double xf =
+          (x - float(tImg.axis.first * 0.5)) / float(tImg.axis.first * 0.5);
       double ax = 1.0;
       cl_int nBGVec = 0;
       for(int j = 0; j <= args.backgroundOrder; j++) {
