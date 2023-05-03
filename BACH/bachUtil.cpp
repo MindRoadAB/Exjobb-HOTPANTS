@@ -102,7 +102,7 @@ void calcStats(Stamp& stamp, Image& image) {
    * TODO: Compare results on same stamp on this and old version.
    */
 
-  double median, sum;  // temp for now
+  double median, sum;
 
   std::vector<double> values{};
   std::vector<cl_int> bins(256, 0);
@@ -163,10 +163,15 @@ void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(!image.masked(xI, yI, Image::badInput, Image::nan) &&
-         stamp[indexS] >= 0) {
-        maskedStamp.push_back(stamp[indexS]);
+      if(image.anyMasked(xI, yI) || image[xI + yI * image.axis.first] <= 1e-10)
+        continue;
+
+      if(std::isnan(image[xI + yI * image.axis.first])) {
+        image.maskPix(xI, yI, Image::nan);
+        continue;
       }
+
+      maskedStamp.push_back(stamp[indexS]);
     }
   }
 
@@ -200,8 +205,12 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::badInput, Image::nan) ||
-           stamp[indexS] < 0) {
+        if(image.anyMasked(xI, yI) ||
+           image[xI + yI * image.axis.first] <= 1e-10)
+          continue;
+
+        if(std::isnan(image[xI + yI * image.axis.first])) {
+          image.maskPix(xI, yI, Image::nan);
           continue;
         }
 
