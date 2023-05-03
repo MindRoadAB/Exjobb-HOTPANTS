@@ -257,7 +257,7 @@ double calcSig(Stamp& s, std::vector<double>& kernSol, Image& tImg,
   }
   if(sigCount > 0) {
     signal /= sigCount;
-    if(signal >= 1e10) signal = -1;
+    if(signal >= 1e10) signal = -1.0;
   } else {
     signal = -1.0;
   }
