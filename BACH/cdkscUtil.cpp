@@ -289,12 +289,12 @@ std::vector<float> makeModel(Stamp& s, std::vector<double>& kernSol,
                              std::pair<cl_long, cl_long> imgSize) {
   std::vector<float> model(args.fSStampWidth * args.fSStampWidth, 0.0);
 
-  std::pair<cl_long, cl_long> hImgAxis =
+  std::pair<float, float> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
   auto [ssx, ssy] = s.subStamps.front().imageCoords;
 
   for(int i = 0; i < args.fSStampWidth * args.fSStampWidth; i++) {
-    model[i] = kernSol[1] * s.W[0][i];
+    model[i] += kernSol[1] * s.W[0][i];
   }
 
   for(int i = 1, k = 2; i < args.nPSF; i++) {
