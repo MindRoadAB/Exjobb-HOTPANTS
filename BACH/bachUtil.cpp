@@ -26,11 +26,6 @@ void maskInput(Image& tImg, Image& sImg) {
         tImg.maskAroundPix(x, y, Image::okConv);
         sImg.maskAroundPix(x, y, Image::okConv);
       }
-
-      if(std::isnan(tImg[index]) || std::isnan(sImg[index])) {
-        tImg.maskPix(x, y, Image::nan);
-        sImg.maskPix(x, y, Image::nan);
-      }
     }
   }
 }

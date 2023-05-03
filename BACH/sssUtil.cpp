@@ -66,9 +66,7 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
         continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y, Image::badPixel, Image::psf, Image::nan,
-                      Image::badInput, Image::edge))
-        return 0.0;
+      if(image.anyBadMasked(x, y)) return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
         image.maskPix(x, y, Image::badPixel);
@@ -97,7 +95,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         absx = x + stamp.coords.first;
         coords = x + (y * stamp.size.first);
 
-        if(image.masked(absx, absy, Image::badPixel, Image::psf, Image::edge)) {
+        if(image.anyBadMasked(absx, absy)) {
           continue;
         }
 
@@ -130,8 +128,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                 continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image.masked(kx, ky, Image::badPixel, Image::psf,
-                              Image::edge)) {
+              if(image.anyBadMasked(kx, ky)) {
                 continue;
               }
 

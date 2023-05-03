@@ -265,6 +265,11 @@ struct Image {
                   masks::nan, masks::okConv, masks::psf);
   }
 
+  bool anyBadMasked(int x, int y) {
+    return masked(x, y, masks::badInput, masks::badPixel, masks::edge,
+                  masks::nan, masks::psf);
+  }
+
   bool masked(int x, int y, std::same_as<Image::masks> auto... mI) {
     std::vector<Image::masks> mL{mI...};
     bool retVal = false;
@@ -344,6 +349,7 @@ struct Image {
       if(x < 0 || x >= axis.first || inX == x) continue;
       for(int y = inY - args.hKernelWidth; y <= inY + args.hKernelWidth; y++) {
         if(y < 0 || y >= axis.second || inY == y) continue;
+        if(this->anyMasked(x, y)) continue;
         this->maskPix(x, y, mI...);
       }
     }
