@@ -47,8 +47,8 @@ std::vector<double> createScProd(std::vector<Stamp>& stamps, Image&,
 double calcSig(Stamp&, std::vector<double>& kernSol, Image& tImg, Image& sImg);
 double getBackground(int x, int y, std::vector<double>& kernSol,
                      std::pair<cl_long, cl_long> imgSize);
-std::vector<double> makeModel(Stamp&, std::vector<double>& kernSol,
-                              std::pair<cl_long, cl_long> imgSize);
+std::vector<float> makeModel(Stamp&, std::vector<double>& kernSol,
+                             std::pair<cl_long, cl_long> imgSize);
 void fitKernel(Kernel&, std::vector<Stamp>& stamps, Image& tImg, Image& sImg);
 bool checkFitSolution(Kernel&, std::vector<Stamp>& stamps, Image& tImg,
                       Image& sImg);

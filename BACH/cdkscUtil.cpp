@@ -225,7 +225,7 @@ double calcSig(Stamp& s, std::vector<double>& kernSol, Image& tImg,
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   double background = getBackground(ssx, ssy, kernSol, tImg.axis);
-  std::vector<double> tmp{makeModel(s, kernSol, tImg.axis)};
+  std::vector<float> tmp{makeModel(s, kernSol, tImg.axis)};
 
   int sigCount = 0;
   double signal = 0.0;
@@ -270,8 +270,8 @@ double getBackground(int x, int y, std::vector<double>& kernSol,
                    (((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2) +
                1;
   double bg = 0.0;
-  int xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.first);
-  int yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
+  double xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.first);
+  double yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
 
   double ax = 1.0;
   for(int i = 0, k = 1; i <= args.backgroundOrder; i++) {
@@ -285,9 +285,9 @@ double getBackground(int x, int y, std::vector<double>& kernSol,
   return bg;
 }
 
-std::vector<double> makeModel(Stamp& s, std::vector<double>& kernSol,
-                              std::pair<cl_long, cl_long> imgSize) {
-  std::vector<double> model(args.fSStampWidth * args.fSStampWidth, 0.0);
+std::vector<float> makeModel(Stamp& s, std::vector<double>& kernSol,
+                             std::pair<cl_long, cl_long> imgSize) {
+  std::vector<float> model(args.fSStampWidth * args.fSStampWidth, 0.0);
 
   std::pair<cl_long, cl_long> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
