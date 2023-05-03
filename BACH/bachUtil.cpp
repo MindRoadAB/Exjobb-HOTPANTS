@@ -23,8 +23,8 @@ void maskInput(Image& tImg, Image& sImg) {
 
       if(std::max(tImg[index], sImg[index]) >= args.threshHigh ||
          std::min(tImg[index], sImg[index]) <= args.threshLow) {
-        tImg.maskAroundPix(x, y, Image::badInput);
-        sImg.maskAroundPix(x, y, Image::badInput);
+        tImg.maskAroundPix(x, y, Image::okConv);
+        sImg.maskAroundPix(x, y, Image::okConv);
       }
 
       if(std::isnan(tImg[index]) || std::isnan(sImg[index])) {
