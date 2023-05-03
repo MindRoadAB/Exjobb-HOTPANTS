@@ -30,11 +30,11 @@ inline cl_int readImage(Image& input) {
 
   img.readAllKeys();
 
-  std::valarray<cl_double> temp(0.0, img.axis(0) * img.axis(1));
+  std::valarray<double> temp(0.0, img.axis(0) * img.axis(1));
   img.read(temp);
-  input = Image{input.name,
-                std::vector<cl_double>{std::begin(temp), std::end(temp)},
-                std::make_pair(img.axis(0), img.axis(1))};
+  input =
+      Image{input.name, std::vector<double>{std::begin(temp), std::end(temp)},
+            std::make_pair(img.axis(0), img.axis(1))};
 
   if(args.verbose) {
     std::cout << img << std::endl;
@@ -59,7 +59,7 @@ inline cl_int writeImage(Image& img) {
 
   cl_long fpixel(1);
 
-  valarray<cl_double> data{&img, img.size()};
+  valarray<double> data{&img, img.size()};
 
   pFits->pHDU().write(fpixel, data.size(), data);
 

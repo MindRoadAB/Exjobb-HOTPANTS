@@ -9,7 +9,7 @@ void createB(Stamp& s, Image& img) {
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int i = 0; i < args.nPSF; i++) {
-    cl_double p0 = 0.0;
+    double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
       for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
         int k =
@@ -24,7 +24,7 @@ void createB(Stamp& s, Image& img) {
     s.B.push_back(p0);
   }
 
-  cl_double q = 0.0;
+  double q = 0.0;
   for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
     for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
       int k =
@@ -50,7 +50,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
   s.W.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-  std::vector<cl_double> tmp{};
+  std::vector<double> tmp{};
 
   // Convolve Image with filterY taking pixels in a (args.hSStampWidth +
   // args.hKernelWidth) area around a substamp.
@@ -62,7 +62,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
         // cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
-        cl_double v = img[imgIndex];
+        double v = img[imgIndex];
         tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
@@ -118,7 +118,7 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   }
 
   int nvec = 0;
-  s.W = std::vector<std::vector<cl_double>>();
+  s.W = std::vector<std::vector<double>>();
   for(int g = 0; g < cl_int(args.dg.size()); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
@@ -152,10 +152,10 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
     double yf = (y - tImg.axis.second * 0.5) / (tImg.axis.second * 0.5);
     for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
       double xf = (x - tImg.axis.first * 0.5) / (tImg.axis.first * 0.5);
-      cl_double ax = 1.0;
+      double ax = 1.0;
       cl_int nBGVec = 0;
       for(int j = 0; j <= args.backgroundOrder; j++) {
-        cl_double ay = 1.0;
+        double ay = 1.0;
         for(int k = 0; k <= args.backgroundOrder - j; k++) {
           s.W[args.nPSF + nBGVec++].push_back(ax * ay);
           ay *= yf;

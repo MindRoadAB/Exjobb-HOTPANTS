@@ -20,16 +20,16 @@ struct Arguments {
   int stampsx = 10;
   int stampsy = 10;
 
-  cl_double threshLow = 0.0;
-  cl_double threshHigh = 25000.0;
-  cl_double threshKernFit = 20.0;
+  double threshLow = 0.0;
+  double threshHigh = 25000.0;
+  double threshKernFit = 20.0;
 
-  cl_double sigClipAlpha = 3.0;
-  cl_double iqRange = 1.35;  // interquartile range
+  double sigClipAlpha = 3.0;
+  double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
 
-  cl_int nPSF = 49;  // nPSF
+  cl_int nPSF = 49;          // nPSF
 
   cl_int hSStampWidth = 15;  // half substamp width
   cl_int fSStampWidth = 31;  // full substamp width
@@ -42,7 +42,7 @@ struct Arguments {
   cl_int kernelOrder = 2;
 
   std::vector<cl_int> dg = {6, 4, 2};  // ngauss = length of dg
-  std::vector<cl_double> bg = {
+  std::vector<double> bg = {
       (1.0 / (2.0 * 0.7 * 0.7)),
       (1.0 / (2.0 * 1.5 * 1.5)),
       (1.0 / (2.0 * 3.0 * 3.0)),

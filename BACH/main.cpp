@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
   /* == Check Template Stamps  ==*/
   int numTemplSStamps = identifySStamps(templateStamps, templateImg);
-  if(cl_double(numTemplSStamps) / templateStamps.size() < 0.1) {
+  if(double(numTemplSStamps) / templateStamps.size() < 0.1) {
     if(args.verbose)
       std::cout << "Not enough substamps found in " << templateImg.name
                 << " trying again with lower thresholds..." << std::endl;
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 
   /* == Check Science Stamps  ==*/
   int numSciSStamps = identifySStamps(sciStamps, scienceImg);
-  if(cl_double(numSciSStamps) / sciStamps.size() < 0.1) {
+  if(double(numSciSStamps) / sciStamps.size() < 0.1) {
     if(args.verbose) {
       std::cout << "Not enough substamps found in " << scienceImg.name
                 << " trying again with lower thresholds..." << std::endl;
@@ -131,8 +131,8 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Choosing convolution direction..." << std::endl;
 
-  cl_double templateMerit = testFit(templateStamps, templateImg, scienceImg);
-  cl_double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
+  double templateMerit = testFit(templateStamps, templateImg, scienceImg);
+  double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
   if(args.verbose)
     std::cout << "template merit value = " << templateMerit
               << ", science merit value = " << scienceMerit << std::endl;
@@ -158,10 +158,8 @@ int main(int argc, char* argv[]) {
   std::cout << "Convolving..." << std::endl;
 
   std::vector<cl_double> convKernels{};
-  int xSteps =
-      std::ceil((templateImg.axis.first) / cl_double(args.fKernelWidth));
-  int ySteps =
-      std::ceil((templateImg.axis.second) / cl_double(args.fKernelWidth));
+  int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
+  int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
   for(int x = 0; x < xSteps; x++) {
     int imgX = x * xSteps + args.hKernelWidth;
     for(int y = 0; y < ySteps; y++) {
@@ -189,8 +187,10 @@ int main(int argc, char* argv[]) {
                                  &convKernels[0]);
   checkError(err);
 
-  err = queue.enqueueWriteBuffer(timgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 &templateImg);
+  err = queue.enqueueWriteBuffer(
+      timgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+      &std::vector<cl_double>(templateImg.data.begin(),
+                              templateImg.data.end())[0]);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -201,9 +201,12 @@ int main(int argc, char* argv[]) {
   conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
+  std::vector<cl_double> tmpOut(outImg.size());
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &outImg);
+                                sizeof(cl_double) * w * h, &tmpOut[0]);
   checkError(err);
+
+  outImg.data = tmpOut;
 
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
@@ -219,12 +222,15 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Subtracting images..." << std::endl;
 
-  err = queue.enqueueWriteBuffer(convimgbuf, CL_TRUE, 0,
-                                 sizeof(cl_double) * w * h, &outImg);
+  err = queue.enqueueWriteBuffer(
+      convimgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+      &std::vector<cl_double>(outImg.data.begin(), outImg.data.end())[0]);
   checkError(err);
 
-  err = queue.enqueueWriteBuffer(simgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-                                 &scienceImg);
+  err = queue.enqueueWriteBuffer(
+      simgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+      &std::vector<cl_double>(scienceImg.data.begin(),
+                              scienceImg.data.end())[0]);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
@@ -232,8 +238,10 @@ int main(int argc, char* argv[]) {
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &diffImg);
+                                sizeof(cl_double) * w * h, &tmpOut[0]);
   checkError(err);
+
+  diffImg.data = tmpOut;
 
   std::cout << std::endl;
 
@@ -248,7 +256,7 @@ int main(int argc, char* argv[]) {
       "kern.fits",
       std::make_pair(long(args.fKernelWidth), long(args.fKernelWidth)),
       args.outPath};
-  std::vector<cl_double> kernel{
+  std::vector<double> kernel{
       std::next(convKernels.begin(),
                 args.fKernelWidth * args.fKernelWidth * 500),
       std::next(convKernels.begin(),

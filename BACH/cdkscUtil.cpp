@@ -2,23 +2,23 @@
 
 #include "utils/bachUtil.h"
 
-cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
+double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
   int matSize = nComp1 * nComp2 + nBGComp + 1;
   int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
 
-  std::vector<cl_double> kernelSum(stamps.size(), 0.0);
+  std::vector<double> kernelSum(stamps.size(), 0.0);
   std::vector<int> index(nKernSolComp);  // Internal between ludcmp and lubksb.
 
   int count = 0;
   for(auto& s : stamps) {
     if(!s.subStamps.empty()) {
       double d;
-      std::vector<cl_double> testVec(args.nPSF + 2, 0.0);
-      std::vector<std::vector<cl_double>> testMat(
-          args.nPSF + 2, std::vector<cl_double>(args.nPSF + 2, 0.0));
+      std::vector<double> testVec(args.nPSF + 2, 0.0);
+      std::vector<std::vector<double>> testMat(
+          args.nPSF + 2, std::vector<double>(args.nPSF + 2, 0.0));
 
       for(int i = 1; i <= args.nPSF + 1; i++) {
         testVec[i] = s.B[i];
@@ -35,7 +35,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
     }
   }
 
-  cl_double kernelMean, kernelStdev;
+  double kernelMean, kernelStdev;
   sigmaClip(kernelSum, kernelMean, kernelStdev, 10);
 
   // normalise
@@ -52,7 +52,7 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
 
   // do fit
   auto [matrix, weight] = createMatrix(testStamps, tImg.axis);
-  std::vector<cl_double> testKernSol = createScProd(testStamps, sImg, weight);
+  std::vector<double> testKernSol = createScProd(testStamps, sImg, weight);
 
   double d;
   ludcmp(matrix, matSize, index, d);
@@ -63,22 +63,21 @@ cl_double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   kernelMean = makeKernel(testKern, tImg.axis, 0, 0);
 
   // calc merit value
-  std::vector<cl_double> merit{};
-  cl_double sig{};
+  std::vector<double> merit{};
+  double sig{};
   count = 0;
   for(auto& ts : testStamps) {
     sig = calcSig(ts, testKern.solution, tImg, sImg);
     if(sig != -1 && sig <= 1e10) merit.push_back(sig);
   }
-  cl_double meritMean, meritStdDev;
+  double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
   meritMean /= kernelMean;
   if(count > 0) return meritMean;
   return 666;
 }
 
-std::pair<std::vector<std::vector<cl_double>>,
-          std::vector<std::vector<cl_double>>>
+std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;  // = 6
@@ -90,10 +89,10 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   int pixStamp = args.fSStampWidth * args.fSStampWidth;
   int hPixX = imgSize.first / 2, hPixY = imgSize.second / 2;
 
-  std::vector<std::vector<cl_double>> matrix(
-      matSize + 1, std::vector<cl_double>(matSize + 1, 0.0));
-  std::vector<std::vector<cl_double>> weight(
-      stamps.size(), std::vector<cl_double>(nComp2, 0.0));
+  std::vector<std::vector<double>> matrix(
+      matSize + 1, std::vector<double>(matSize + 1, 0.0));
+  std::vector<std::vector<double>> weight(stamps.size(),
+                                          std::vector<double>(nComp2, 0.0));
 
   for(size_t st = 0; st < stamps.size(); st++) {
     Stamp& s = stamps[st];
@@ -106,9 +105,9 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
       double a2 = 1.0;
       for(int j = 0; j <= int(args.kernelOrder) - i; j++) {
         weight[st][k++] = a1 * a2;
-        a2 *= cl_double(ssy - hPixY) / hPixY;
+        a2 *= double(ssy - hPixY) / hPixY;
       }
-      a1 *= cl_double(ssx - hPixX) / hPixX;
+      a1 *= double(ssx - hPixX) / hPixX;
     }
 
     for(int i = 0; i < nComp; i++) {
@@ -171,15 +170,14 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   return std::make_pair(matrix, weight);
 }
 
-std::vector<cl_double> createScProd(
-    std::vector<Stamp>& stamps, Image& img,
-    std::vector<std::vector<cl_double>>& weight) {
+std::vector<double> createScProd(std::vector<Stamp>& stamps, Image& img,
+                                 std::vector<std::vector<double>>& weight) {
   int nComp1 = args.nPSF - 1;
   int nComp2 = ((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2;
   int nBGComp = ((args.backgroundOrder + 1) * (args.backgroundOrder + 2)) / 2;
   int nKernSolComp = args.nPSF * nComp2 + nBGComp + 1;
 
-  std::vector<cl_double> res(nKernSolComp, 0.0);
+  std::vector<double> res(nKernSolComp, 0.0);
 
   int sI = 0;
   for(auto& s : stamps) {
@@ -189,7 +187,7 @@ std::vector<cl_double> createScProd(
     }
     auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-    cl_double p0 = s.B[1];
+    double p0 = s.B[1];
     res[1] += p0;
 
     for(int i = 1; i < nComp1 + 1; i++) {
@@ -201,7 +199,7 @@ std::vector<cl_double> createScProd(
     }
 
     for(int bgIndex = 0; bgIndex < nBGComp; bgIndex++) {
-      cl_double q = 0.0;
+      double q = 0.0;
       for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
         for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
           int index = x + args.hSStampWidth +
@@ -218,16 +216,16 @@ std::vector<cl_double> createScProd(
   return res;
 }
 
-cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& tImg,
-                  Image& sImg) {
+double calcSig(Stamp& s, std::vector<double>& kernSol, Image& tImg,
+               Image& sImg) {
   if(s.subStamps.empty()) return -1.0;
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-  cl_double background = getBackground(ssx, ssy, kernSol, tImg.axis);
-  std::vector<cl_double> tmp{makeModel(s, kernSol, tImg.axis)};
+  double background = getBackground(ssx, ssy, kernSol, tImg.axis);
+  std::vector<double> tmp{makeModel(s, kernSol, tImg.axis)};
 
   int sigCount = 0;
-  cl_double signal = 0.0;
+  double signal = 0.0;
   for(int y = 0; y < args.fSStampWidth; y++) {
     int absY = y - args.hSStampWidth + ssy;
     for(int x = 0; x < args.fSStampWidth; x++) {
@@ -235,9 +233,9 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& tImg,
 
       int intIndex = x + y * args.fSStampWidth;
       int absIndex = absX + absY * tImg.axis.first;
-      cl_double tDat = tmp[intIndex];
+      double tDat = tmp[intIndex];
 
-      cl_double diff = tDat - sImg[absIndex] + background;
+      double diff = tDat - sImg[absIndex] + background;
       if(tImg.masked(absX, absY, Image::badInput) ||
          std::abs(sImg[absIndex]) <= 1e-10) {
         continue;
@@ -263,18 +261,18 @@ cl_double calcSig(Stamp& s, std::vector<cl_double>& kernSol, Image& tImg,
   return signal;
 }
 
-cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
-                        std::pair<cl_long, cl_long> imgSize) {
+double getBackground(int x, int y, std::vector<double>& kernSol,
+                     std::pair<cl_long, cl_long> imgSize) {
   int BGComp = (args.nPSF - 1) *
                    (((args.kernelOrder + 1) * (args.kernelOrder + 2)) / 2) +
                1;
-  cl_double bg = 0.0;
+  double bg = 0.0;
   int xf = (x - 0.5 * imgSize.first) / (0.5 * imgSize.first);
   int yf = (y - 0.5 * imgSize.second) / (0.5 * imgSize.second);
 
-  cl_double ax = 1.0;
+  double ax = 1.0;
   for(int i = 0, k = 1; i <= args.backgroundOrder; i++) {
-    cl_double ay = 1.0;
+    double ay = 1.0;
     for(int j = 0; j <= args.backgroundOrder - i; j++) {
       bg += kernSol[BGComp + k++] * ax * ay;
       ay *= yf;
@@ -284,9 +282,9 @@ cl_double getBackground(int x, int y, std::vector<cl_double>& kernSol,
   return bg;
 }
 
-std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
-                                 std::pair<cl_long, cl_long> imgSize) {
-  std::vector<cl_double> model(args.fSStampWidth * args.fSStampWidth, 0.0);
+std::vector<double> makeModel(Stamp& s, std::vector<double>& kernSol,
+                              std::pair<cl_long, cl_long> imgSize) {
+  std::vector<double> model(args.fSStampWidth * args.fSStampWidth, 0.0);
 
   std::pair<cl_long, cl_long> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
@@ -302,9 +300,9 @@ std::vector<cl_double> makeModel(Stamp& s, std::vector<cl_double>& kernSol,
       double aY = 1.0;
       for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         coeff += kernSol[k++] * aX * aY;
-        aY *= cl_double(ssy - hImgAxis.second) / hImgAxis.second;
+        aY *= double(ssy - hImgAxis.second) / hImgAxis.second;
       }
-      aX *= cl_double(ssx - hImgAxis.first) / hImgAxis.first;
+      aX *= double(ssx - hImgAxis.first) / hImgAxis.first;
     }
 
     for(int j = 0; j < args.fSStampWidth * args.fSStampWidth; j++) {
@@ -323,12 +321,12 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   int matSize = nComp1 * nComp2 + nBGComp + 1;
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
-  std::vector<cl_double> solution = createScProd(stamps, sImg, weight);
+  std::vector<double> solution = createScProd(stamps, sImg, weight);
   std::cout << "values at 290 on: " << solution[290] << ", " << solution[291]
             << ", " << solution[292] << std::endl;
 
   std::vector<int> index(matSize, 0);
-  cl_double d{};
+  double d{};
   ludcmp(fittingMatrix, matSize, index, d);
   lubksb(fittingMatrix, matSize, index, solution);
 
@@ -349,13 +347,13 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
 bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
                       Image& sImg) {
-  std::vector<cl_double> ssValues{};
+  std::vector<double> ssValues{};
 
   bool check = false;
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
-      cl_double sig = calcSig(s, k.solution, tImg, sImg);
+      double sig = calcSig(s, k.solution, tImg, sImg);
 
       if(sig == -1) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
@@ -368,7 +366,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
     }
   }
 
-  cl_double mean = 0.0, stdDev = 0.0;
+  double mean = 0.0, stdDev = 0.0;
   sigmaClip(ssValues, mean, stdDev, 10);
   std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
 

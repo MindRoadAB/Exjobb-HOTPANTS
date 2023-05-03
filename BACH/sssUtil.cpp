@@ -41,7 +41,7 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
       Stamp tmpS{};
       for(int y = 0; y < stamph; y++) {
         for(int x = 0; x < stampw; x++) {
-          cl_double tmp = img[(startx + x) + ((starty + y) * w)];
+          double tmp = img[(startx + x) + ((starty + y) * w)];
           tmpS.data.push_back(tmp);
         }
       }
@@ -83,12 +83,12 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
 }
 
 cl_int findSStamps(Stamp& stamp, Image& image, int index) {
-  cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
+  double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
 
-  cl_double dfrac = 0.9;
+  double dfrac = 0.9;
   while(stamp.subStamps.size() < size_t(args.maxSStamps)) {
     long absx, absy, coords;
-    cl_double lowestPSFLim =
+    double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
     for(long y = 0; y < args.fStampWidth; y++) {
