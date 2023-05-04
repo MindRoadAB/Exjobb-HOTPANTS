@@ -23,11 +23,13 @@ void maskInput(Image& tImg, Image& sImg) {
 
       if(std::max(tImg[index], sImg[index]) >= args.threshHigh ||
          std::min(tImg[index], sImg[index]) <= args.threshLow) {
-        tImg.maskAroundPix(x, y, Image::okConv);
-        sImg.maskAroundPix(x, y, Image::okConv);
+        tImg.maskPix(x, y, Image::badInput);
+        sImg.maskPix(x, y, Image::badInput);
       }
     }
   }
+  tImg.spreadMask();
+  sImg.spreadMask();
 }
 
 bool inImage(Image& image, int x, int y) {
