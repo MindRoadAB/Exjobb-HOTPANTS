@@ -94,7 +94,7 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   std::vector<std::vector<double>> weight(stamps.size(),
                                           std::vector<double>(nComp2, 0.0));
 
-  for(size_t st = 0; st < stamps.size(); st++) {
+  for(size_t st = 0; st < std::min((int)stamps.size(), 18); st++) {
     Stamp& s = stamps[st];
     if(s.subStamps.empty()) continue;
 
@@ -184,7 +184,7 @@ std::vector<double> createScProd(std::vector<Stamp>& stamps, Image& img,
 
   int sI = 0;
   for(auto& s : stamps) {
-    if(s.subStamps.empty()) {
+    if(sI >= std::min((int)stamps.size(), 18) || s.subStamps.empty()) {
       sI++;
       continue;
     }
@@ -375,7 +375,7 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
-      if((s.stats.chi2 - mean) > args.threshKernFit * stdDev) {
+      if((s.stats.chi2 - mean) > args.sigKernFit * stdDev) {
         if(args.verbose)
           std::cout << "throwing out ss (" << s.subStamps[0].imageCoords.first
                     << ", " << s.subStamps[0].imageCoords.second << ")"

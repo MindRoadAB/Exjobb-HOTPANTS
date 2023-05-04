@@ -23,13 +23,14 @@ struct Arguments {
   double threshLow = 0.0;
   double threshHigh = 25000.0;
   double threshKernFit = 20.0;
+  double sigKernFit = 2.0;
 
   double sigClipAlpha = 3.0;
   double iqRange = 1.35;  // interquartile range
 
   cl_int maxSStamps = 6;
 
-  cl_int nPSF = 49;          // nPSF
+  cl_int nPSF = 49;  // nPSF
 
   cl_int hSStampWidth = 15;  // half substamp width
   cl_int fSStampWidth = 31;  // full substamp width
