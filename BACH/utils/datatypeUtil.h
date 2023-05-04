@@ -199,7 +199,7 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
 
-  enum masks { nan, badInput, badPixel, psf, edge };
+  enum masks { nan, badInput, badPixel, psf, edge, okConv };
   std::vector<double> data{};
 
  private:
@@ -208,6 +208,7 @@ struct Image {
   std::vector<bool> badPixelMask{};
   std::vector<bool> psfMask{};
   std::vector<bool> edgeMask{};
+  std::vector<bool> okConvMask{};
 
  public:
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
@@ -220,7 +221,8 @@ struct Image {
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
         psfMask(this->size(), false),
-        edgeMask(this->size(), false) {}
+        edgeMask(this->size(), false),
+        okConvMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<double> d,
         std::pair<cl_long, cl_long> a, const std::string p = "res/")
@@ -232,7 +234,8 @@ struct Image {
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
         psfMask(this->size(), false),
-        edgeMask(this->size(), false) {}
+        edgeMask(this->size(), false),
+        okConvMask(this->size(), false) {}
 
   double* operator&() { return &data[0]; }
 
@@ -278,6 +281,9 @@ struct Image {
         case edge:
           retVal |= edgeMask[x + (y * axis.first)];
           break;
+        case okConv:
+          retVal |= okConvMask[x + (y * axis.first)];
+          break;
         default:
           std::cout << "Error: Not caught by the switch case" << std::endl;
           exit(1);
@@ -293,19 +299,22 @@ struct Image {
       switch(m) {
         case nan:
           nanMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case badInput:
           badInputMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case badPixel:
           badPixelMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case psf:
           psfMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case edge:
           edgeMask[x + (y * axis.first)] = true;
-          return;
+          break;
+        case okConv:
+          okConvMask[x + (y * axis.first)] = true;
+          break;
         default:
           std::cout << "Error: Not caught by the switch case" << std::endl;
           exit(1);
@@ -331,6 +340,26 @@ struct Image {
       for(int y = inY - args.hSStampWidth; y <= inY + args.hSStampWidth; y++) {
         if(y < 0 || y >= axis.second) continue;
         this->maskPix(x, y, mI...);
+      }
+    }
+  }
+
+  void spreadMask() {
+    std::cout << "masking" << std::endl;
+    int w = args.hKernelWidth / 2;
+    for(int x = 0; x < axis.first; x++) {
+      for(int y = 0; y < axis.second; y++) {
+        if(this->masked(x, y, Image::badInput)) {
+          std::cout << "masking around x = " << x << ", y = " << y << std::endl;
+          for(int xx = -w; xx <= w; xx++) {
+            if(xx + x < 0 || xx + x >= axis.first) continue;
+            for(int yy = -w; yy <= w; yy++) {
+              if(yy + y < 0 || yy + y >= axis.second) continue;
+              if(this->masked(xx + x, yy + y, Image::badInput)) continue;
+              this->maskPix(xx + x, yy + y, Image::okConv);
+            }
+          }
+        }
       }
     }
   }
