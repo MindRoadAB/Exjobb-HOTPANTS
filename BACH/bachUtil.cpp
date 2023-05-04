@@ -413,8 +413,10 @@ double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
 
   int k = 2;
   std::vector<double> kernCoeffs(args.nPSF, 0.0);
-  std::pair<cl_long, cl_long> hImgAxis =
+  std::pair<double, double> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
+  double xf = (x - hImgAxis.first) / hImgAxis.first;
+  double yf = (y - hImgAxis.second) / hImgAxis.second;
 
   for(int i = 1; i < args.nPSF; i++) {
     double aX = 1.0;
@@ -422,9 +424,9 @@ double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
       double aY = 1.0;
       for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
-        aY *= double(y - hImgAxis.second) / hImgAxis.second;
+        aY *= yf;
       }
-      aX *= double(x - hImgAxis.first) / hImgAxis.first;
+      aX *= xf;
     }
   }
   kernCoeffs[0] = kern.solution[1];

@@ -161,10 +161,11 @@ int main(int argc, char* argv[]) {
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
   for(int x = 0; x < xSteps; x++) {
-    int imgX = x * xSteps + args.hKernelWidth;
+    int imgX = x * args.fKernelWidth + args.hKernelWidth;
     for(int y = 0; y < ySteps; y++) {
-      int imgY = y * ySteps + args.hKernelWidth;
-      makeKernel(convolutionKernel, templateImg.axis, imgX, imgY);
+      int imgY = y * args.fKernelWidth + args.hKernelWidth;
+      makeKernel(convolutionKernel, templateImg.axis, imgX + args.hKernelWidth,
+                 imgY + args.hKernelWidth);
       convKernels.insert(convKernels.end(),
                          convolutionKernel.currKernel.begin(),
                          convolutionKernel.currKernel.end());
