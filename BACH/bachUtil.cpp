@@ -175,14 +175,13 @@ void calcStats(Stamp& stamp, Image& image) {
 
       if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel) ||
          image[xI + yI * image.axis.first] <= 1e-10) {
-        if(std::isnan(image[xI + yI * image.axis.first]))
-          std::cout << "should be nan (" << xI << ", " << yI << ")"
-                    << std::endl;
         continue;
       }
 
-      if(std::isnan(image[xI + yI * image.axis.first]))
+      if(std::isnan(image[xI + yI * image.axis.first])) {
         image.maskPix(xI, yI, Image::nan, Image::badInput);
+        continue;
+      }
 
       maskedStamp.push_back(stamp[indexS]);
     }
@@ -218,8 +217,21 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::badInput, Image::nan) ||
-           stamp[indexS] < 0) {
+        if(image.masked(xI, yI, Image::okConv)) {
+          if(std::isnan(image[xI + yI * image.axis.first]))
+            std::cout << "okConv, should be nan (" << xI << ", " << yI << ")"
+                      << std::endl;
+          continue;
+        }
+
+        if(image.masked(xI, yI, Image::badInput, Image::edge,
+                        Image::badPixel) ||
+           image[xI + yI * image.axis.first] <= 1e-10) {
+          continue;
+        }
+
+        if(std::isnan(image[xI + yI * image.axis.first])) {
+          image.maskPix(xI, yI, Image::nan, Image::badInput);
           continue;
         }
 

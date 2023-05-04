@@ -94,7 +94,7 @@ createMatrix(std::vector<Stamp>& stamps, std::pair<cl_long, cl_long>& imgSize) {
   std::vector<std::vector<double>> weight(stamps.size(),
                                           std::vector<double>(nComp2, 0.0));
 
-  for(size_t st = 0; st < std::min((int)stamps.size(), 18); st++) {
+  for(size_t st = 0; st < stamps.size(); st++) {
     Stamp& s = stamps[st];
     if(s.subStamps.empty()) continue;
 
@@ -184,7 +184,7 @@ std::vector<double> createScProd(std::vector<Stamp>& stamps, Image& img,
 
   int sI = 0;
   for(auto& s : stamps) {
-    if(sI >= std::min((int)stamps.size(), 18) || s.subStamps.empty()) {
+    if(s.subStamps.empty()) {
       sI++;
       continue;
     }
@@ -325,8 +325,6 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
   std::vector<double> solution = createScProd(stamps, sImg, weight);
-  std::cout << "values at 290 on: " << solution[290] << ", " << solution[291]
-            << ", " << solution[292] << std::endl;
 
   std::vector<int> index(matSize, 0);
   double d{};
@@ -379,11 +377,6 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
       if((s.stats.chi2 - mean) > args.sigKernFit * stdDev) {
-        // if(args.verbose)
-        //   std::cout << "throwing out ss (" <<
-        //   s.subStamps[0].imageCoords.first
-        //             << ", " << s.subStamps[0].imageCoords.second << ")"
-        //             << std::endl;
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;

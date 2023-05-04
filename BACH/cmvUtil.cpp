@@ -5,6 +5,7 @@
 void createB(Stamp& s, Image& img) {
   /* Does Equation 2.13 which create the right side of the Equation Ma=B */
 
+  s.B = {};
   s.B.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
