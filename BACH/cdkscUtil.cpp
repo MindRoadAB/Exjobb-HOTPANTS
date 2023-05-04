@@ -371,15 +371,19 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   double mean = 0.0, stdDev = 0.0;
   sigmaClip(ssValues, mean, stdDev, 10);
-  std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
+  fprintf(stderr, "    Mean sig: %6.3f stdev: %6.3f\n", mean, stdDev);
+  fprintf(stderr, "    Iterating through stamps with sig > %.3f\n",
+          mean + args.sigKernFit * stdDev);
+  // std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
       if((s.stats.chi2 - mean) > args.sigKernFit * stdDev) {
-        if(args.verbose)
-          std::cout << "throwing out ss (" << s.subStamps[0].imageCoords.first
-                    << ", " << s.subStamps[0].imageCoords.second << ")"
-                    << std::endl;
+        // if(args.verbose)
+        //   std::cout << "throwing out ss (" <<
+        //   s.subStamps[0].imageCoords.first
+        //             << ", " << s.subStamps[0].imageCoords.second << ")"
+        //             << std::endl;
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;
@@ -393,12 +397,12 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   }
   std::cout << "We use " << cnt << " sub-stamps" << std::endl;
   std::cout << "Remaining sub-stamps are:" << std::endl;
-  for(auto s : stamps) {
-    if(!s.subStamps.empty()) {
-      std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
-                << std::endl;
-    }
-  }
+  // for(auto s : stamps) {
+  //   if(!s.subStamps.empty()) {
+  //     std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
+  //               << std::endl;
+  //   }
+  // }
 
   return check;
 }
