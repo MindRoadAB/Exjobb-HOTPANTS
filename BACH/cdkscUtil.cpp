@@ -69,7 +69,6 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   // calc merit value
   std::vector<double> merit{};
   double sig{};
-  count = 0;
   for(auto& ts : testStamps) {
     std::cout << "got test stamps" << std::endl;
     sig = calcSig(ts, testKern.solution, tImg, sImg);
@@ -78,7 +77,7 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
   meritMean /= kernelMean;
-  if(count > 0) return meritMean;
+  if(merit.size() > 0) return meritMean;
   return 666;
 }
 
