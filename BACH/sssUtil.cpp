@@ -8,6 +8,8 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   int index = 0, hasSStamps = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
+    std::cout << "sky: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
+              << std::endl;
     findSStamps(s, image, index);
     if(!s.subStamps.empty()) hasSStamps++;
     index++;
@@ -21,11 +23,6 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
 }
 
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
-  args.fStampWidth =
-      std::min(w / args.stampsx, h / args.stampsy) - args.fKernelWidth;
-  args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
-  args.hStampWidth = args.fStampWidth / 2;
-
   for(int j = 0; j < args.stampsy; j++) {
     for(int i = 0; i < args.stampsx; i++) {
       int startx = i * (double(w) / double(args.stampsx));

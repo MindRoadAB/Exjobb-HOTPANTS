@@ -45,10 +45,14 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
 
   // global fit
   std::vector<Stamp> testStamps{};
+  int c = 0;
   for(auto& s : stamps) {
-    if(s.stats.diff < args.threshKernFit && !s.subStamps.empty())
+    if(s.stats.diff < args.threshKernFit && !s.subStamps.empty()) {
       testStamps.push_back(s);
+      c++;
+    }
   }
+  std::cout << c << " test stamps" << std::endl;
 
   // do fit
   auto [matrix, weight] = createMatrix(testStamps, tImg.axis);
@@ -67,6 +71,7 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   double sig{};
   count = 0;
   for(auto& ts : testStamps) {
+    std::cout << "got test stamps" << std::endl;
     sig = calcSig(ts, testKern.solution, tImg, sImg);
     if(sig != -1 && sig <= 1e10) merit.push_back(sig);
   }

@@ -180,6 +180,7 @@ void calcStats(Stamp& stamp, Image& image) {
 
       if(std::isnan(image[xI + yI * image.axis.first])) {
         image.maskPix(xI, yI, Image::nan, Image::badInput);
+        std::cout << "nan ";
         continue;
       }
 
@@ -224,8 +225,8 @@ void calcStats(Stamp& stamp, Image& image) {
           continue;
         }
 
-        if(image.masked(xI, yI, Image::badInput, Image::edge,
-                        Image::badPixel) ||
+        if(image.masked(xI, yI, Image::badInput, Image::badPixel,
+                        Image::edge) ||
            image[xI + yI * image.axis.first] <= 1e-10) {
           continue;
         }
@@ -250,7 +251,7 @@ void calcStats(Stamp& stamp, Image& image) {
 
     if(okCount == 0 || binSize == 0.0) {
       std::cout << "No good pixels or variation in pixels" << std::endl;
-      exit(1);
+      return;
     }
 
     double maxDens = 0.0;

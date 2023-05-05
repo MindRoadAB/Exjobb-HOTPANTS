@@ -65,6 +65,23 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Creating stamps..." << std::endl;
 
+  args.fStampWidth = std::min(int(templateImg.axis.first / args.stampsx),
+                              int(templateImg.axis.second / args.stampsy));
+  args.fStampWidth -= args.fKernelWidth;
+  args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
+
+  if(args.fStampWidth < args.fSStampWidth) {
+    args.fStampWidth = args.fSStampWidth + args.fKernelWidth;
+    args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
+
+    args.stampsx = int(templateImg.axis.first / args.fStampWidth);
+    args.stampsy = int(templateImg.axis.second / args.fStampWidth);
+
+    if(args.verbose)
+      std::cout << "Too many stamps requested, using " << args.stampsx << "x"
+                << args.stampsy << " stamps instead." << std::endl;
+  }
+
   std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
   if(args.verbose) {
@@ -160,10 +177,10 @@ int main(int argc, char* argv[]) {
   std::vector<cl_double> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
-  for(int x = 0; x < xSteps; x++) {
-    int imgX = x * args.fKernelWidth + args.hKernelWidth;
-    for(int y = 0; y < ySteps; y++) {
-      int imgY = y * args.fKernelWidth + args.hKernelWidth;
+  for(int y = 0; y < ySteps; y++) {
+    int imgY = y * args.fKernelWidth + args.hKernelWidth;
+    for(int x = 0; x < xSteps; x++) {
+      int imgX = x * args.fKernelWidth + args.hKernelWidth;
       makeKernel(convolutionKernel, templateImg.axis, imgX + args.hKernelWidth,
                  imgY + args.hKernelWidth);
       convKernels.insert(convKernels.end(),
