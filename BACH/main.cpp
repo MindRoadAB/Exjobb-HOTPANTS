@@ -189,6 +189,13 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  double kernSum =
+      makeKernel(convolutionKernel, templateImg.axis,
+                 templateImg.axis.first / 2, templateImg.axis.second / 2);
+  cl_double invKernSum = 1.0 / kernSum;
+  std::cout << "inv kernsum is " << invKernSum << std::endl;
+  std::cout << "kernsum is " << kernSum << std::endl;
+
   cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
@@ -230,6 +237,7 @@ int main(int argc, char* argv[]) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
+      outImg.data[x + y * w] *= invKernSum;
     }
   }
 
@@ -237,6 +245,12 @@ int main(int argc, char* argv[]) {
 
   err = writeImage(outImg);
   checkError(err);
+
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= kernSum;
+    }
+  }
 
   std::cout << "Subtracting images..." << std::endl;
 
@@ -251,8 +265,9 @@ int main(int argc, char* argv[]) {
                               scienceImg.data.end())[0]);
   checkError(err);
 
-  cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
-  sub(eargs, simgbuf, convimgbuf, diffimgbuf);
+  cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_double> sub{program,
+                                                                       "sub"};
+  sub(eargs, simgbuf, convimgbuf, diffimgbuf, invKernSum);
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,

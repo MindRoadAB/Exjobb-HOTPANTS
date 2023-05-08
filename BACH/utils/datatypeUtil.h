@@ -345,23 +345,21 @@ struct Image {
   }
 
   void spreadMask() {
-    std::cout << "masking" << std::endl;
     int w = args.hKernelWidth / 2;
-    for(int x = 0; x < axis.first; x++) {
-      for(int y = 0; y < axis.second; y++) {
-        if(this->masked(x, y, Image::badInput)) {
-          std::cout << "masking around x = " << x << ", y = " << y << std::endl;
-          for(int xx = -w; xx <= w; xx++) {
-            if(xx + x < 0 || xx + x >= axis.first) continue;
-            for(int yy = -w; yy <= w; yy++) {
-              if(yy + y < 0 || yy + y >= axis.second) continue;
-              if(this->masked(xx + x, yy + y, Image::badInput)) continue;
-              this->maskPix(xx + x, yy + y, Image::okConv);
-            }
-          }
-        }
-      }
-    }
+    // for(int x = 0; x < axis.first; x++) {
+    //   for(int y = 0; y < axis.second; y++) {
+    //     if(this->masked(x, y, Image::badInput)) {
+    //       for(int xx = -w; xx <= w; xx++) {
+    //         if(xx + x < 0 || xx + x >= axis.first) continue;
+    //         for(int yy = -w; yy <= w; yy++) {
+    //           if(yy + y < 0 || yy + y >= axis.second) continue;
+    //           if(this->masked(xx + x, yy + y, Image::badInput)) continue;
+    //           this->maskPix(xx + x, yy + y, Image::okConv);
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   }
 };
 

@@ -23,7 +23,6 @@ void maskInput(Image& tImg, Image& sImg) {
 
       if(std::max(tImg[index], sImg[index]) >= args.threshHigh ||
          std::min(tImg[index], sImg[index]) <= args.threshLow) {
-        std::cout << "masking bad input" << std::endl;
         tImg.maskPix(x, y, Image::badInput);
         sImg.maskPix(x, y, Image::badInput);
       }
