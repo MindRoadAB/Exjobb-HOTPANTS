@@ -286,7 +286,6 @@ double getBackground(int x, int y, std::vector<double>& kernSol,
     }
     ax *= xf;
   }
-  fprintf(stderr, "bg: %d\n", bg);
   return bg;
 }
 
