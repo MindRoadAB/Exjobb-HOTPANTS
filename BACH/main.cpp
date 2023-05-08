@@ -193,8 +193,11 @@ int main(int argc, char* argv[]) {
       makeKernel(convolutionKernel, templateImg.axis,
                  templateImg.axis.first / 2, templateImg.axis.second / 2);
   cl_double invKernSum = 1.0 / kernSum;
-  std::cout << "inv kernsum is " << invKernSum << std::endl;
-  std::cout << "kernsum is " << kernSum << std::endl;
+
+  if(args.verbose) {
+    std::cout << "Sum of kernel at (" << templateImg.axis.first / 2 << ","
+              << templateImg.axis.second / 2 << "): " << kernSum << std::endl;
+  }
 
   cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);

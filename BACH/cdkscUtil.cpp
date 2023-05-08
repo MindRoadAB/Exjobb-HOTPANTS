@@ -52,7 +52,6 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
       c++;
     }
   }
-  std::cout << c << " test stamps" << std::endl;
 
   // do fit
   auto [matrix, weight] = createMatrix(testStamps, tImg.axis);
@@ -70,7 +69,6 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   std::vector<double> merit{};
   double sig{};
   for(auto& ts : testStamps) {
-    std::cout << "got test stamps" << std::endl;
     sig = calcSig(ts, testKern.solution, tImg, sImg);
     if(sig != -1 && sig <= 1e10) merit.push_back(sig);
   }
@@ -373,10 +371,12 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   double mean = 0.0, stdDev = 0.0;
   sigmaClip(ssValues, mean, stdDev, 10);
-  fprintf(stderr, "    Mean sig: %6.3f stdev: %6.3f\n", mean, stdDev);
-  fprintf(stderr, "    Iterating through stamps with sig > %.3f\n",
-          mean + args.sigKernFit * stdDev);
-  // std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
+
+  if(args.verbose) {
+    std::cout << "Mean sig: " << mean << " stdev: " << stdDev << '\n'
+              << "    Iterating through stamps with sig >"
+              << (mean + args.sigKernFit * stdDev) << std::endl;
+  }
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
@@ -392,14 +392,15 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   for(auto s : stamps) {
     if(!s.subStamps.empty()) cnt++;
   }
-  std::cout << "We use " << cnt << " sub-stamps" << std::endl;
-  std::cout << "Remaining sub-stamps are:" << std::endl;
-  // for(auto s : stamps) {
-  //   if(!s.subStamps.empty()) {
-  //     std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
-  //               << std::endl;
-  //   }
-  // }
-
+  if(args.verbose) {
+    std::cout << "We use " << cnt << " sub-stamps" << std::endl;
+    std::cout << "Remaining sub-stamps are:" << std::endl;
+    for(auto s : stamps) {
+      if(!s.subStamps.empty()) {
+        std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
+                  << std::endl;
+      }
+    }
+  }
   return check;
 }

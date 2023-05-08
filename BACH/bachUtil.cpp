@@ -250,11 +250,8 @@ void calcStats(Stamp& stamp, Image& image) {
       sumBins += bins[i];
       sumExpect += i * bins[i];
     }
-    std::cout << "sumExpect = " << sumExpect << ", sumBins = " << sumBins
-              << std::endl;
+
     double modeBin = sumExpect / sumBins + 0.5;
-    std::cout << "lowerBinVal = " << lowerBinVal << ", binSize = " << binSize
-              << ", modeBin = " << modeBin << std::endl;
     stamp.stats.skyEst = lowerBinVal + binSize * (modeBin - 1.0);
 
     lower = okCount * 0.25;

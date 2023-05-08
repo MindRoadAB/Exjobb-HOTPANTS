@@ -8,17 +8,19 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
   int index = 0, hasSStamps = 0;
   for(auto& s : stamps) {
     calcStats(s, image);
-    std::cout << "sky: " << s.stats.skyEst << ", fwhm: " << s.stats.fwhm
-              << std::endl;
     findSStamps(s, image, index);
     if(!s.subStamps.empty()) hasSStamps++;
     index++;
   }
-  std::cout << "before: " << stamps.size() << std::endl;
+
   stamps.erase(std::remove_if(stamps.begin(), stamps.end(),
                               [](Stamp& s) { return s.subStamps.empty(); }),
                stamps.end());
-  std::cout << "after: " << stamps.size() << std::endl;
+
+  if(args.verbose) {
+    std::cout << "Non-Empty stamps: " << stamps.size() << std::endl;
+  }
+
   return hasSStamps;
 }
 
