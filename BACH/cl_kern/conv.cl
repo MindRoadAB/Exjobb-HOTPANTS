@@ -14,9 +14,8 @@ void kernel conv(global const double *convKern, const long convWidth,
 
   int convOffset = (xS + (yS * xSteps)) * convWidth * convWidth;
 
-  long lim = convWidth % 2 == 0 ? (convWidth / 2) : (convWidth / 2 + 1);
-  for(long j = -(convWidth / 2); j < lim; j++) {
-    for(long i = -(convWidth / 2); i < lim; i++) {
+  for(long j = -(convWidth / 2); j <= convWidth / 2; j++) {
+    for(long i = -(convWidth / 2); i <= convWidth / 2; i++) {
       if((x + i >= 0) && (x + i < w) && (y + j >= 0) && (y + j < h)) {
         long convIndex = -i + convWidth / 2 + (-j + convWidth / 2) * convWidth;
         convIndex += convOffset;

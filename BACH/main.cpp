@@ -216,9 +216,11 @@ int main(int argc, char* argv[]) {
       conv{program, "conv"};
   cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                         cl::NullRange};
-  conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
+  // conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
+  for(int p = 0; p < templateImg.size(); p++)
+    seqConvolve(convKernels, args.fKernelWidth, templateImg, outImg, w, h, p);
   std::vector<cl_double> tmpOut(outImg.size());
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
                                 sizeof(cl_double) * w * h, &tmpOut[0]);
@@ -228,7 +230,7 @@ int main(int argc, char* argv[]) {
 
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
-      outImg.data[x + y * w] +=
+      outImg.data[x + y * w] -=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
       outImg.data[x + y * w] *= invKernSum;
     }
@@ -269,6 +271,11 @@ int main(int argc, char* argv[]) {
 
   std::cout << '\n' << "Writing output..." << std::endl;
 
+  // int testIndx = 7224368 - 10;
+  // std::cout << "Image = " << scienceImg[testIndx]
+  //           << ", Convolved = " << outImg[testIndx] * invKernSum
+  //           << ", inverse norm = " << invKernSum
+  //           << ", Sub = " << diffImg[testIndx] << std::endl;
   err = writeImage(diffImg);
   checkError(err);
 

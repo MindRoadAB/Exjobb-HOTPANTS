@@ -53,4 +53,6 @@ void fitKernel(Kernel&, std::vector<Stamp>& stamps, Image& tImg, Image& sImg);
 bool checkFitSolution(Kernel&, std::vector<Stamp>& stamps, Image& tImg,
                       Image& sImg);
 
+void seqConvolve(std::vector<cl_double>& convKern, long convWidth, Image& image,
+                 Image& outimg, const long w, const long h, int pix);
 #endif
