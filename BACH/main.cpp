@@ -21,9 +21,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::cout << std::endl;
-
-  std::cout << "Reading in images..." << std::endl;
+  std::cout << '\n' << "Reading in images..." << std::endl;
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
@@ -49,9 +47,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  std::cout << std::endl;
-
-  std::cout << "Setting up openCL..." << std::endl;
+  std::cout << '\n' << "Setting up openCL..." << std::endl;
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -59,11 +55,9 @@ int main(int argc, char* argv[]) {
   cl::Program program =
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
-  std::cout << std::endl;
-
   /* ===== SSS ===== */
 
-  std::cout << "Creating stamps..." << std::endl;
+  std::cout << '\n' << "Creating stamps..." << std::endl;
 
   args.fStampWidth = std::min(int(templateImg.axis.first / args.stampsx),
                               int(templateImg.axis.second / args.stampsy));
@@ -142,11 +136,9 @@ int main(int argc, char* argv[]) {
     fillStamp(s, scienceImg, templateImg, convolutionKernel);
   }
 
-  std::cout << std::endl;
-
   /* ===== CD ===== */
 
-  std::cout << "Choosing convolution direction..." << std::endl;
+  std::cout << '\n' << "Choosing convolution direction..." << std::endl;
 
   double templateMerit = testFit(templateStamps, templateImg, scienceImg);
   double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
@@ -160,11 +152,9 @@ int main(int argc, char* argv[]) {
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
-  std::cout << std::endl;
-
   /* ===== KSC ===== */
 
-  std::cout << "Fitting kernel..." << std::endl;
+  std::cout << '\n' << "Fitting kernel..." << std::endl;
 
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 
@@ -199,12 +189,12 @@ int main(int argc, char* argv[]) {
               << templateImg.axis.second / 2 << "): " << kernSum << std::endl;
   }
 
+  // Declare all the buffers which will be need in opencl operations.
   cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * convKernels.size());
-
   cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
@@ -244,8 +234,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << std::endl;
-
   err = writeImage(outImg);
   checkError(err);
 
@@ -255,7 +243,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "Subtracting images..." << std::endl;
+  std::cout << '\n' << "Subtracting images..." << std::endl;
 
   err = queue.enqueueWriteBuffer(
       convimgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
@@ -279,27 +267,11 @@ int main(int argc, char* argv[]) {
 
   diffImg.data = tmpOut;
 
-  std::cout << std::endl;
-
-  std::cout << "Writing output..." << std::endl;
+  std::cout << '\n' << "Writing output..." << std::endl;
 
   err = writeImage(diffImg);
   checkError(err);
 
-  std::cout << std::endl;
-
-  Image kernelImg{
-      "kern.fits",
-      std::make_pair(long(args.fKernelWidth), long(args.fKernelWidth)),
-      args.outPath};
-  std::vector<double> kernel{
-      std::next(convKernels.begin(),
-                args.fKernelWidth * args.fKernelWidth * 500),
-      std::next(convKernels.begin(),
-                args.fKernelWidth * args.fKernelWidth * 501)};
-  kernelImg.data = kernel;
-  writeImage(kernelImg);
-
-  std::cout << "BACH finished." << std::endl;
+  std::cout << '\n' << "BACH finished." << std::endl;
   return 0;
 }
