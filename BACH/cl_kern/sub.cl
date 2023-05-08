@@ -3,4 +3,5 @@ void kernel sub(global const double *S, global const double *I,
   int id = get_global_id(0);
 
   D[id] = (I[id] - S[id]) * -invNorm;
+  // D[id] = S[id];
 }

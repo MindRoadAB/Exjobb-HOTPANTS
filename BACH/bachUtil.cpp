@@ -136,7 +136,8 @@ void calcStats(Stamp& stamp, Image& image) {
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
 
-    if(image.masked(xI, yI, Image::badInput, Image::nan) || stamp[indexS] < 0) {
+    if(image.masked(xI, yI, Image::badInput, Image::nan) ||
+       stamp[indexS] < 1e-10 || std::isnan(stamp[indexS])) {
       continue;
     }
 
@@ -272,7 +273,11 @@ void calcStats(Stamp& stamp, Image& image) {
       sumBins += bins[i];
       sumExpect += i * bins[i];
     }
+    std::cout << "sumExpect = " << sumExpect << ", sumBins = " << sumBins
+              << std::endl;
     double modeBin = sumExpect / sumBins + 0.5;
+    std::cout << "lowerBinVal = " << lowerBinVal << ", binSize = " << binSize
+              << ", modeBin = " << modeBin << std::endl;
     stamp.stats.skyEst = lowerBinVal + binSize * (modeBin - 1.0);
 
     lower = okCount * 0.25;
