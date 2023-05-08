@@ -343,47 +343,5 @@ struct Image {
       }
     }
   }
-
-  void spreadMask() {
-    std::cout << "spreading masks" << std::endl;
-    for(int imX = 0; imX < axis.first; imX++) {
-      for(int imY = 0; imY < axis.second; imY++) {
-        if(this->anyBadMasked(imX, imY)) {
-          for(int x = imX - args.hKernelWidth / 2;
-              x <= imX + args.hKernelWidth / 2; x++) {
-            if(x < 0 || x >= axis.first) continue;
-            for(int y = imY - args.hKernelWidth / 2;
-                y <= imY + args.hKernelWidth / 2; y++) {
-              if(y < 0 || y >= axis.second) continue;
-              if(this->anyMasked(x, y)) continue;
-              if(x == 209 && y == 163)
-                std::cout << "masking the thing!!!!!!!!!!!!!!!!!!!!!!"
-                          << std::endl;
-              this->maskPix(x, y, Image::okConv);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  void spreadMask() {
-    int w = args.hKernelWidth / 2;
-    // for(int x = 0; x < axis.first; x++) {
-    //   for(int y = 0; y < axis.second; y++) {
-    //     if(this->masked(x, y, Image::badInput)) {
-    //       for(int xx = -w; xx <= w; xx++) {
-    //         if(xx + x < 0 || xx + x >= axis.first) continue;
-    //         for(int yy = -w; yy <= w; yy++) {
-    //           if(yy + y < 0 || yy + y >= axis.second) continue;
-    //           if(this->masked(xx + x, yy + y, Image::badInput)) continue;
-    //           this->maskPix(xx + x, yy + y, Image::okConv);
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-  }
 };
-
 #endif

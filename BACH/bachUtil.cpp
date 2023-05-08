@@ -26,10 +26,16 @@ void maskInput(Image& tImg, Image& sImg) {
         tImg.maskPix(x, y, Image::badInput);
         sImg.maskPix(x, y, Image::badInput);
       }
+
+      if(std::isnan(tImg[index])) {
+        tImg.maskPix(x, y, Image::nan, Image::badInput);
+      }
+
+      if(std::isnan(sImg[index])) {
+        sImg.maskPix(x, y, Image::nan, Image::badInput);
+      }
     }
   }
-  tImg.spreadMask();
-  sImg.spreadMask();
 }
 
 bool inImage(Image& image, int x, int y) {
@@ -161,21 +167,9 @@ void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(image.masked(xI, yI, Image::okConv)) {
-        if(std::isnan(image[xI + yI * image.axis.first]))
-          std::cout << "okConv, should be nan (" << xI << ", " << yI << ")"
-                    << std::endl;
-        continue;
-      }
-
-      if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel) ||
+      if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel,
+                      Image::nan) ||
          image[xI + yI * image.axis.first] <= 1e-10) {
-        continue;
-      }
-
-      if(std::isnan(image[xI + yI * image.axis.first])) {
-        image.maskPix(xI, yI, Image::nan, Image::badInput);
-        std::cout << "nan ";
         continue;
       }
 
@@ -213,21 +207,9 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::okConv)) {
-          if(std::isnan(image[xI + yI * image.axis.first]))
-            std::cout << "okConv, should be nan (" << xI << ", " << yI << ")"
-                      << std::endl;
-          continue;
-        }
-
-        if(image.masked(xI, yI, Image::badInput, Image::badPixel,
-                        Image::edge) ||
+        if(image.masked(xI, yI, Image::badInput, Image::badPixel, Image::edge,
+                        Image::nan) ||
            image[xI + yI * image.axis.first] <= 1e-10) {
-          continue;
-        }
-
-        if(std::isnan(image[xI + yI * image.axis.first])) {
-          image.maskPix(xI, yI, Image::nan, Image::badInput);
           continue;
         }
 
