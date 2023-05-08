@@ -222,15 +222,15 @@ int main(int argc, char* argv[]) {
   for(int p = 0; p < templateImg.size(); p++)
     seqConvolve(convKernels, args.fKernelWidth, templateImg, outImg, w, h, p);
   std::vector<cl_double> tmpOut(outImg.size());
-  err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &tmpOut[0]);
-  checkError(err);
+  // err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
+  //                               sizeof(cl_double) * w * h, &tmpOut[0]);
+  // checkError(err);
 
-  outImg.data = tmpOut;
+  // outImg.data = tmpOut;
 
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
-      outImg.data[x + y * w] -=
+      outImg.data[x + y * w] +=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
       outImg.data[x + y * w] *= invKernSum;
     }
