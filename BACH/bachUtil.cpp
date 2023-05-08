@@ -131,7 +131,8 @@ void calcStats(Stamp& stamp, Image& image) {
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
 
-    if(image.masked(xI, yI, Image::badInput, Image::nan) || stamp[indexS] < 0) {
+    if(image.masked(xI, yI, Image::badInput, Image::nan) ||
+       stamp[indexS] < 1e-10 || std::isnan(stamp[indexS])) {
       continue;
     }
 
@@ -160,11 +161,21 @@ void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(image.anyMasked(xI, yI) || image[xI + yI * image.axis.first] <= 1e-10)
+      if(image.masked(xI, yI, Image::okConv)) {
+        if(std::isnan(image[xI + yI * image.axis.first]))
+          std::cout << "okConv, should be nan (" << xI << ", " << yI << ")"
+                    << std::endl;
         continue;
+      }
+
+      if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel) ||
+         image[xI + yI * image.axis.first] <= 1e-10) {
+        continue;
+      }
 
       if(std::isnan(image[xI + yI * image.axis.first])) {
-        image.maskPix(xI, yI, Image::nan);
+        image.maskPix(xI, yI, Image::nan, Image::badInput);
+        std::cout << "nan ";
         continue;
       }
 
@@ -202,12 +213,21 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.anyMasked(xI, yI) ||
-           image[xI + yI * image.axis.first] <= 1e-10)
+        if(image.masked(xI, yI, Image::okConv)) {
+          if(std::isnan(image[xI + yI * image.axis.first]))
+            std::cout << "okConv, should be nan (" << xI << ", " << yI << ")"
+                      << std::endl;
           continue;
+        }
+
+        if(image.masked(xI, yI, Image::badInput, Image::badPixel,
+                        Image::edge) ||
+           image[xI + yI * image.axis.first] <= 1e-10) {
+          continue;
+        }
 
         if(std::isnan(image[xI + yI * image.axis.first])) {
-          image.maskPix(xI, yI, Image::nan);
+          image.maskPix(xI, yI, Image::nan, Image::badInput);
           continue;
         }
 
@@ -226,7 +246,7 @@ void calcStats(Stamp& stamp, Image& image) {
 
     if(okCount == 0 || binSize == 0.0) {
       std::cout << "No good pixels or variation in pixels" << std::endl;
-      exit(1);
+      return;
     }
 
     double maxDens = 0.0;
@@ -248,7 +268,11 @@ void calcStats(Stamp& stamp, Image& image) {
       sumBins += bins[i];
       sumExpect += i * bins[i];
     }
+    std::cout << "sumExpect = " << sumExpect << ", sumBins = " << sumBins
+              << std::endl;
     double modeBin = sumExpect / sumBins + 0.5;
+    std::cout << "lowerBinVal = " << lowerBinVal << ", binSize = " << binSize
+              << ", modeBin = " << modeBin << std::endl;
     stamp.stats.skyEst = lowerBinVal + binSize * (modeBin - 1.0);
 
     lower = okCount * 0.25;
@@ -389,8 +413,10 @@ double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
 
   int k = 2;
   std::vector<double> kernCoeffs(args.nPSF, 0.0);
-  std::pair<cl_long, cl_long> hImgAxis =
+  std::pair<double, double> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
+  double xf = (x - hImgAxis.first) / hImgAxis.first;
+  double yf = (y - hImgAxis.second) / hImgAxis.second;
 
   for(int i = 1; i < args.nPSF; i++) {
     double aX = 1.0;
@@ -398,9 +424,9 @@ double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
       double aY = 1.0;
       for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
-        aY *= double(y - hImgAxis.second) / hImgAxis.second;
+        aY *= yf;
       }
-      aX *= double(x - hImgAxis.first) / hImgAxis.first;
+      aX *= xf;
     }
   }
   kernCoeffs[0] = kern.solution[1];

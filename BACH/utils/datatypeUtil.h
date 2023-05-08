@@ -68,8 +68,7 @@ struct Kernel {
      * TODO: Make into a clKernel, look at hotpants for c indexing instead.
      */
 
-    std::vector<double> temp{};
-    std::vector<double> kern0{};
+    std::vector<double> temp(args.fKernelWidth * args.fKernelWidth, 0.0);
     double sumX = 0.0, sumY = 0.0;
     // UNSURE: Don't really know why dx,dy are a thing
     cl_int dx = (stats[n].x / 2) * 2 - stats[n].x;
@@ -100,16 +99,17 @@ struct Kernel {
 
       for(int u = 0; u < args.fKernelWidth; u++) {
         for(int v = 0; v < args.fKernelWidth; v++) {
-          temp.push_back(filterX[n][u] * filterX[n][v]);
+          temp[u + v * args.fKernelWidth] = filterX[n][u] * filterY[n][v];
           if(n > 0) {
-            temp.back() -= kernVec[0][u + v * args.fKernelWidth];
+            temp[u + v * args.fKernelWidth] -=
+                kernVec[0][u + v * args.fKernelWidth];
           }
         }
       }
     } else {
       for(int u = 0; u < args.fKernelWidth; u++) {
         for(int v = 0; v < args.fKernelWidth; v++) {
-          temp.push_back(filterX[n][u] * filterX[n][v]);
+          temp[u + v * args.fKernelWidth] = (filterX[n][u] * filterY[n][v]);
         }
       }
     }
@@ -309,22 +309,22 @@ struct Image {
       switch(m) {
         case nan:
           nanMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case badInput:
           badInputMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case badPixel:
           badPixelMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case psf:
           psfMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case edge:
           edgeMask[x + (y * axis.first)] = true;
-          return;
+          break;
         case okConv:
           okConvMask[x + (y * axis.first)] = true;
-          return;
+          break;
         default:
           std::cout << "Error: Not caught by the switch case" << std::endl;
           exit(1);
@@ -365,6 +365,24 @@ struct Image {
         }
       }
     }
+  }
+
+  void spreadMask() {
+    int w = args.hKernelWidth / 2;
+    // for(int x = 0; x < axis.first; x++) {
+    //   for(int y = 0; y < axis.second; y++) {
+    //     if(this->masked(x, y, Image::badInput)) {
+    //       for(int xx = -w; xx <= w; xx++) {
+    //         if(xx + x < 0 || xx + x >= axis.first) continue;
+    //         for(int yy = -w; yy <= w; yy++) {
+    //           if(yy + y < 0 || yy + y >= axis.second) continue;
+    //           if(this->masked(xx + x, yy + y, Image::badInput)) continue;
+    //           this->maskPix(xx + x, yy + y, Image::okConv);
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   }
 };
 

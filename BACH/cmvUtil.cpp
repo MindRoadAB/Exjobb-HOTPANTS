@@ -5,6 +5,7 @@
 void createB(Stamp& s, Image& img) {
   /* Does Equation 2.13 which create the right side of the Equation Ma=B */
 
+  s.B = {};
   s.B.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
@@ -91,6 +92,9 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 void cutSStamp(SubStamp& ss, Image& img) {
   /* Store the original image data around the substamp in said substamp */
 
+  fprintf(stderr, "    xss : %4i yss : %4i\n", ss.imageCoords.first,
+          ss.imageCoords.second);
+
   for(int y = 0; y < args.fSStampWidth; y++) {
     int imgY = ss.imageCoords.second + y - args.hSStampWidth;
 
@@ -109,11 +113,15 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   /* Fills Substamp with gaussian basis convolved images around said substamp
    * and claculates CMV.
    */
+
+  fprintf(stderr, "    xs  : %4i ys  : %4i sig: %6.3f sscnt: %4i nss: %4i \n",
+          s.coords.first + s.center.first, s.coords.second + s.center.second,
+          s.stats.chi2, 0, s.subStamps.size());
   if(s.subStamps.empty()) {
-    if(args.verbose)
-      std::cout << "No eligable substamps in stamp at x = " << s.coords.first
-                << " y = " << s.coords.second << ", stamp rejected"
-                << std::endl;
+    if(args.verbose) fprintf(stderr, "        Reject stamp\n");
+    // std::cout << "No eligable substamps in stamp at x = " << s.coords.first
+    //           << " y = " << s.coords.second << ", stamp rejected"
+    //           << std::endl;
     return 1;
   }
 

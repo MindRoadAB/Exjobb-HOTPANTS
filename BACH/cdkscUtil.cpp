@@ -45,10 +45,14 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
 
   // global fit
   std::vector<Stamp> testStamps{};
+  int c = 0;
   for(auto& s : stamps) {
-    if(s.stats.diff < args.threshKernFit && !s.subStamps.empty())
+    if(s.stats.diff < args.threshKernFit && !s.subStamps.empty()) {
       testStamps.push_back(s);
+      c++;
+    }
   }
+  std::cout << c << " test stamps" << std::endl;
 
   // do fit
   auto [matrix, weight] = createMatrix(testStamps, tImg.axis);
@@ -65,15 +69,15 @@ double testFit(std::vector<Stamp>& stamps, Image& tImg, Image& sImg) {
   // calc merit value
   std::vector<double> merit{};
   double sig{};
-  count = 0;
   for(auto& ts : testStamps) {
+    std::cout << "got test stamps" << std::endl;
     sig = calcSig(ts, testKern.solution, tImg, sImg);
     if(sig != -1 && sig <= 1e10) merit.push_back(sig);
   }
   double meritMean, meritStdDev;
   sigmaClip(merit, meritMean, meritStdDev, 10);
   meritMean /= kernelMean;
-  if(count > 0) return meritMean;
+  if(merit.size() > 0) return meritMean;
   return 666;
 }
 
@@ -325,8 +329,6 @@ void fitKernel(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   auto [fittingMatrix, weight] = createMatrix(stamps, tImg.axis);
   std::vector<double> solution = createScProd(stamps, sImg, weight);
-  std::cout << "values at 290 on: " << solution[290] << ", " << solution[291]
-            << ", " << solution[292] << std::endl;
 
   std::vector<int> index(matSize, 0);
   double d{};
@@ -371,15 +373,14 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
 
   double mean = 0.0, stdDev = 0.0;
   sigmaClip(ssValues, mean, stdDev, 10);
-  std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
+  fprintf(stderr, "    Mean sig: %6.3f stdev: %6.3f\n", mean, stdDev);
+  fprintf(stderr, "    Iterating through stamps with sig > %.3f\n",
+          mean + args.sigKernFit * stdDev);
+  // std::cout << "mean = " << mean << ", stdDev = " << stdDev << std::endl;
 
   for(Stamp& s : stamps) {
     if(!s.subStamps.empty()) {
-      if((s.stats.chi2 - mean) > args.threshKernFit * stdDev) {
-        if(args.verbose)
-          std::cout << "throwing out ss (" << s.subStamps[0].imageCoords.first
-                    << ", " << s.subStamps[0].imageCoords.second << ")"
-                    << std::endl;
+      if((s.stats.chi2 - mean) > args.sigKernFit * stdDev) {
         s.subStamps.erase(s.subStamps.begin(), next(s.subStamps.begin()));
         fillStamp(s, tImg, sImg, k);
         check = true;
@@ -393,12 +394,12 @@ bool checkFitSolution(Kernel& k, std::vector<Stamp>& stamps, Image& tImg,
   }
   std::cout << "We use " << cnt << " sub-stamps" << std::endl;
   std::cout << "Remaining sub-stamps are:" << std::endl;
-  for(auto s : stamps) {
-    if(!s.subStamps.empty()) {
-      std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
-                << std::endl;
-    }
-  }
+  // for(auto s : stamps) {
+  //   if(!s.subStamps.empty()) {
+  //     std::cout << "x = " << s.coords.first << ", y = " << s.coords.second
+  //               << std::endl;
+  //   }
+  // }
 
   return check;
 }

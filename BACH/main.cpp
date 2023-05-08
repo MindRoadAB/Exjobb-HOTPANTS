@@ -65,6 +65,23 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Creating stamps..." << std::endl;
 
+  args.fStampWidth = std::min(int(templateImg.axis.first / args.stampsx),
+                              int(templateImg.axis.second / args.stampsy));
+  args.fStampWidth -= args.fKernelWidth;
+  args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
+
+  if(args.fStampWidth < args.fSStampWidth) {
+    args.fStampWidth = args.fSStampWidth + args.fKernelWidth;
+    args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
+
+    args.stampsx = int(templateImg.axis.first / args.fStampWidth);
+    args.stampsy = int(templateImg.axis.second / args.fStampWidth);
+
+    if(args.verbose)
+      std::cout << "Too many stamps requested, using " << args.stampsx << "x"
+                << args.stampsy << " stamps instead." << std::endl;
+  }
+
   std::vector<Stamp> templateStamps{};
   createStamps(templateImg, templateStamps, w, h);
   if(args.verbose) {
@@ -160,16 +177,24 @@ int main(int argc, char* argv[]) {
   std::vector<cl_double> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
-  for(int x = 0; x < xSteps; x++) {
-    int imgX = x * xSteps + args.hKernelWidth;
-    for(int y = 0; y < ySteps; y++) {
-      int imgY = y * ySteps + args.hKernelWidth;
-      makeKernel(convolutionKernel, templateImg.axis, imgX, imgY);
+  for(int y = 0; y < ySteps; y++) {
+    int imgY = y * args.fKernelWidth + args.hKernelWidth;
+    for(int x = 0; x < xSteps; x++) {
+      int imgX = x * args.fKernelWidth + args.hKernelWidth;
+      makeKernel(convolutionKernel, templateImg.axis, imgX + args.hKernelWidth,
+                 imgY + args.hKernelWidth);
       convKernels.insert(convKernels.end(),
                          convolutionKernel.currKernel.begin(),
                          convolutionKernel.currKernel.end());
     }
   }
+
+  double kernSum =
+      makeKernel(convolutionKernel, templateImg.axis,
+                 templateImg.axis.first / 2, templateImg.axis.second / 2);
+  cl_double invKernSum = 1.0 / kernSum;
+  std::cout << "inv kernsum is " << invKernSum << std::endl;
+  std::cout << "kernsum is " << kernSum << std::endl;
 
   cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
   cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
@@ -212,6 +237,7 @@ int main(int argc, char* argv[]) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
+      outImg.data[x + y * w] *= invKernSum;
     }
   }
 
@@ -219,6 +245,12 @@ int main(int argc, char* argv[]) {
 
   err = writeImage(outImg);
   checkError(err);
+
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= kernSum;
+    }
+  }
 
   std::cout << "Subtracting images..." << std::endl;
 
@@ -233,8 +265,9 @@ int main(int argc, char* argv[]) {
                               scienceImg.data.end())[0]);
   checkError(err);
 
-  cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub{program, "sub"};
-  sub(eargs, simgbuf, convimgbuf, diffimgbuf);
+  cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_double> sub{program,
+                                                                       "sub"};
+  sub(eargs, simgbuf, convimgbuf, diffimgbuf, invKernSum);
 
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
   err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
