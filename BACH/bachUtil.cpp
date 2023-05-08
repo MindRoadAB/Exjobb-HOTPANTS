@@ -26,11 +26,6 @@ void maskInput(Image& tImg, Image& sImg) {
         tImg.maskPix(x, y, Image::badInput);
         sImg.maskPix(x, y, Image::badInput);
       }
-
-      // if(std::isnan(tImg[index]) || std::isnan(sImg[index])) {
-      //   tImg.maskPix(x, y, Image::nan);
-      //   sImg.maskPix(x, y, Image::nan);
-      // }
     }
   }
   tImg.spreadMask();
@@ -104,7 +99,7 @@ void calcStats(Stamp& stamp, Image& image) {
    * TODO: Compare results on same stamp on this and old version.
    */
 
-  double median, sum;  // temp for now
+  double median, sum;
 
   std::vector<double> values{};
   std::vector<cl_int> bins(256, 0);

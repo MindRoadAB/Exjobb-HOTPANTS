@@ -243,14 +243,14 @@ double calcSig(Stamp& s, std::vector<double>& kernSol, Image& tImg,
       double tDat = tmp[intIndex];
 
       double diff = tDat - sImg[absIndex] + background;
-      if(tImg.masked(absX, absY, Image::badInput) ||
+      if(tImg.masked(absX, absY, Image::badInput, Image::nan) ||
          std::abs(sImg[absIndex]) <= 1e-10) {
         continue;
       } else {
         tmp[intIndex] = diff;
       }
       if(std::isnan(tDat) || std::isnan(sImg[absIndex])) {
-        tImg.maskPix(absX, absY, Image::badInput, Image::nan);
+        tImg.maskPix(absX, absY, Image::nan);
         continue;
       }
 

@@ -260,6 +260,16 @@ struct Image {
     return ptr;
   }
 
+  bool anyMasked(int x, int y) {
+    return masked(x, y, masks::badInput, masks::badPixel, masks::edge,
+                  masks::nan, masks::okConv, masks::psf);
+  }
+
+  bool anyBadMasked(int x, int y) {
+    return masked(x, y, masks::badInput, masks::badPixel, masks::edge,
+                  masks::nan, masks::psf);
+  }
+
   bool masked(int x, int y, std::same_as<Image::masks> auto... mI) {
     std::vector<Image::masks> mL{mI...};
     bool retVal = false;
@@ -334,12 +344,25 @@ struct Image {
     }
   }
 
-  void maskAroundPix(int inX, int inY, std::same_as<Image::masks> auto... mI) {
-    for(int x = inX - args.hSStampWidth; x <= inX + args.hSStampWidth; x++) {
-      if(x < 0 || x >= axis.first) continue;
-      for(int y = inY - args.hSStampWidth; y <= inY + args.hSStampWidth; y++) {
-        if(y < 0 || y >= axis.second) continue;
-        this->maskPix(x, y, mI...);
+  void spreadMask() {
+    std::cout << "spreading masks" << std::endl;
+    for(int imX = 0; imX < axis.first; imX++) {
+      for(int imY = 0; imY < axis.second; imY++) {
+        if(this->anyBadMasked(imX, imY)) {
+          for(int x = imX - args.hKernelWidth / 2;
+              x <= imX + args.hKernelWidth / 2; x++) {
+            if(x < 0 || x >= axis.first) continue;
+            for(int y = imY - args.hKernelWidth / 2;
+                y <= imY + args.hKernelWidth / 2; y++) {
+              if(y < 0 || y >= axis.second) continue;
+              if(this->anyMasked(x, y)) continue;
+              if(x == 209 && y == 163)
+                std::cout << "masking the thing!!!!!!!!!!!!!!!!!!!!!!"
+                          << std::endl;
+              this->maskPix(x, y, Image::okConv);
+            }
+          }
+        }
       }
     }
   }
