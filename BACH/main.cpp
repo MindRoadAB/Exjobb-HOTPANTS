@@ -1,5 +1,7 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 300
 
+#include <time.h>
+
 #include <CL/opencl.hpp>
 #include <iostream>
 #include <iterator>
@@ -11,6 +13,8 @@
 #include "utils/fitsUtil.h"
 
 int main(int argc, char* argv[]) {
+  clock_t p1 = clock();
+
   CCfits::FITS::setVerboseMode(true);
 
   try {
@@ -55,7 +59,13 @@ int main(int argc, char* argv[]) {
   cl::Program program =
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
+  clock_t p2 = clock();
+  printf("Initiation took %ds %dms\n", (p2 - p1) / CLOCKS_PER_SEC,
+         ((p2 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   /* ===== SSS ===== */
+
+  clock_t p3 = clock();
 
   std::cout << '\n' << "Creating stamps..." << std::endl;
 
@@ -122,9 +132,15 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  clock_t p4 = clock();
+  printf("SSS took %ds %dms\n", (p4 - p3) / CLOCKS_PER_SEC,
+         ((p4 - p3) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   std::cout << std::endl;
 
   /* ===== CMV ===== */
+
+  clock_t p5 = clock();
 
   std::cout << "Calculating matrix variables..." << std::endl;
 
@@ -136,7 +152,13 @@ int main(int argc, char* argv[]) {
     fillStamp(s, scienceImg, templateImg, convolutionKernel);
   }
 
+  clock_t p6 = clock();
+  printf("CMV took %ds %dms\n", (p6 - p5) / CLOCKS_PER_SEC,
+         ((p6 - p5) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   /* ===== CD ===== */
+
+  clock_t p7 = clock();
 
   std::cout << '\n' << "Choosing convolution direction..." << std::endl;
 
@@ -152,7 +174,13 @@ int main(int argc, char* argv[]) {
   if(args.verbose)
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
+  clock_t p8 = clock();
+  printf("CD took %ds %dms\n", (p8 - p7) / CLOCKS_PER_SEC,
+         ((p8 - p7) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   /* ===== KSC ===== */
+
+  clock_t p9 = clock();
 
   std::cout << '\n' << "Fitting kernel..." << std::endl;
 
@@ -160,7 +188,13 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::endl;
 
+  clock_t p10 = clock();
+  printf("KSC took %ds %dms\n", (p10 - p9) / CLOCKS_PER_SEC,
+         ((p10 - p9) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   /* ===== Conv ===== */
+
+  clock_t p11 = clock();
 
   std::cout << "Convolving..." << std::endl;
 
@@ -255,6 +289,14 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  clock_t p12 = clock();
+  printf("Conv took %ds %dms\n", (p12 - p11) / CLOCKS_PER_SEC,
+         ((p12 - p11) * 1000 / CLOCKS_PER_SEC) % 1000);
+
+  /* ===== Sub ===== */
+
+  clock_t p13 = clock();
+
   std::cout << '\n' << "Subtracting images..." << std::endl;
 
   err = queue.enqueueWriteBuffer(
@@ -279,6 +321,14 @@ int main(int argc, char* argv[]) {
 
   diffImg.data = tmpOut;
 
+  clock_t p14 = clock();
+  printf("Sub took %ds %dms\n", (p14 - p13) / CLOCKS_PER_SEC,
+         ((p14 - p13) * 1000 / CLOCKS_PER_SEC) % 1000);
+
+  /* ===== Fin ===== */
+
+  clock_t p15 = clock();
+
   std::cout << '\n' << "Writing output..." << std::endl;
 
   // int testIndx = 7224368 - 10;
@@ -290,5 +340,13 @@ int main(int argc, char* argv[]) {
   checkError(err);
 
   std::cout << '\n' << "BACH finished." << std::endl;
+
+  clock_t p16 = clock();
+  printf("Fin took %ds %dms\n", (p16 - p15) / CLOCKS_PER_SEC,
+         ((p16 - p15) * 1000 / CLOCKS_PER_SEC) % 1000);
+
+  printf("BACH took %ds %dms\n", (p16 - p1) / CLOCKS_PER_SEC,
+         ((p16 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+
   return 0;
 }
