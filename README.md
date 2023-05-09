@@ -70,3 +70,4 @@ These are the available command line options. The values within the parenthesis 
     -op [output path]          // (out/)
     -ip [input path]           // (res/)
     -v                         // turn on verbose mode
+    -vt                        // turn on verbose time mode
