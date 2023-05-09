@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::cout << '\n' << "Reading in images..." << std::endl;
+  std::cout << "\nReading in images..." << std::endl;
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  std::cout << '\n' << "Setting up openCL..." << std::endl;
+  std::cout << "\nSetting up openCL..." << std::endl;
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 
   clock_t p3 = clock();
 
-  std::cout << '\n' << "Creating stamps..." << std::endl;
+  std::cout << "\nCreating stamps..." << std::endl;
 
   args.fStampWidth = std::min(int(templateImg.axis.first / args.stampsx),
                               int(templateImg.axis.second / args.stampsy));
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
 
   clock_t p5 = clock();
 
-  std::cout << "Calculating matrix variables..." << std::endl;
+  std::cout << "\nCalculating matrix variables..." << std::endl;
 
   Kernel convolutionKernel{};
   for(auto& s : templateStamps) {
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
   clock_t p7 = clock();
 
-  std::cout << '\n' << "Choosing convolution direction..." << std::endl;
+  std::cout << "\nChoosing convolution direction..." << std::endl;
 
   double templateMerit = testFit(templateStamps, templateImg, scienceImg);
   double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
@@ -182,11 +182,9 @@ int main(int argc, char* argv[]) {
 
   clock_t p9 = clock();
 
-  std::cout << '\n' << "Fitting kernel..." << std::endl;
+  std::cout << "\nFitting kernel..." << std::endl;
 
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
-
-  std::cout << std::endl;
 
   clock_t p10 = clock();
   printf("KSC took %ds %dms\n", (p10 - p9) / CLOCKS_PER_SEC,
@@ -196,8 +194,10 @@ int main(int argc, char* argv[]) {
 
   clock_t p11 = clock();
 
-  std::cout << "Convolving..." << std::endl;
+  std::cout << "\nConvolving..." << std::endl;
 
+  // Convolution kernels generated beforehand since we only need on per
+  // kernelsize.
   std::vector<cl_double> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
@@ -212,13 +212,8 @@ int main(int argc, char* argv[]) {
                          convolutionKernel.currKernel.end());
     }
   }
-  // while(true) {
-  //   int aaaa;
-  //   std::cin >> aaaa;
-  //   std::cout << "kernval at " << aaaa << ": " << convKernels[aaaa][0]
-  //             << std::endl;
-  // }
 
+  // Used to normalize the result since the kernel sum is not always 1.
   double kernSum =
       makeKernel(convolutionKernel, templateImg.axis,
                  templateImg.axis.first / 2, templateImg.axis.second / 2);
@@ -230,25 +225,23 @@ int main(int argc, char* argv[]) {
   }
 
   // Declare all the buffers which will be need in opencl operations.
-  cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
+  cl::Buffer tImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer sImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer convImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer kernBuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * convKernels.size());
-  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer outImgBuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffImgBuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   cl::CommandQueue queue(context, default_device);
 
-  err = queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
+  // Write necessary data for convolution
+  err = queue.enqueueWriteBuffer(kernBuf, CL_TRUE, 0,
                                  sizeof(cl_double) * convKernels.size(),
                                  &convKernels[0]);
   checkError(err);
-
-  err = queue.enqueueWriteBuffer(
-      timgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(templateImg.data.begin(),
-                              templateImg.data.end())[0]);
+  err = queue.enqueueWriteBuffer(tImgBuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 &templateImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -256,22 +249,16 @@ int main(int argc, char* argv[]) {
       conv{program, "conv"};
   cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                         cl::NullRange};
-  conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
+  conv(eargs, kernBuf, args.fKernelWidth, tImgBuf, outImgBuf, w, h);
 
+  // Read data from convolution
   Image outImg{args.outName, templateImg.axis, args.outPath};
 
-  // for(int p = 0; p < templateImg.size(); p++) {
-  //   seqConvolve(convKernels, args.fKernelWidth, templateImg, outImg, w, h,
-  //   p);
-  // }
-
-  std::vector<cl_double> tmpOut(templateImg.size());
-  err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &tmpOut[0]);
+  err = queue.enqueueReadBuffer(outImgBuf, CL_TRUE, 0,
+                                sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
-  outImg.data = tmpOut;
-
+  // Add background and scale by kernel sum for output of convoluted image.
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
@@ -283,6 +270,7 @@ int main(int argc, char* argv[]) {
   err = writeImage(outImg);
   checkError(err);
 
+  // Revert scale by sum kernel for use in subtraction.
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] *= kernSum;
@@ -297,29 +285,24 @@ int main(int argc, char* argv[]) {
 
   clock_t p13 = clock();
 
-  std::cout << '\n' << "Subtracting images..." << std::endl;
+  std::cout << "\nSubtracting images..." << std::endl;
 
-  err = queue.enqueueWriteBuffer(
-      convimgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(outImg.data.begin(), outImg.data.end())[0]);
-  checkError(err);
-
-  err = queue.enqueueWriteBuffer(
-      simgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(scienceImg.data.begin(),
-                              scienceImg.data.end())[0]);
+  // Write necessary data for subtraction
+  err = queue.enqueueWriteBuffer(convImgBuf, CL_TRUE, 0,
+                                 sizeof(cl_double) * w * h, &outImg);
+  err = queue.enqueueWriteBuffer(sImgBuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 &scienceImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_double> sub{program,
                                                                        "sub"};
-  sub(eargs, simgbuf, convimgbuf, diffimgbuf, invKernSum);
+  sub(eargs, sImgBuf, convImgBuf, diffImgBuf, invKernSum);
 
+  // Read data from subtraction
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
-  err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &tmpOut[0]);
+  err = queue.enqueueReadBuffer(diffImgBuf, CL_TRUE, 0,
+                                sizeof(cl_double) * w * h, &diffImg);
   checkError(err);
-
-  diffImg.data = tmpOut;
 
   clock_t p14 = clock();
   printf("Sub took %ds %dms\n", (p14 - p13) / CLOCKS_PER_SEC,
@@ -328,22 +311,16 @@ int main(int argc, char* argv[]) {
   /* ===== Fin ===== */
 
   clock_t p15 = clock();
+  std::cout << "\nWriting output..." << std::endl;
 
-  std::cout << '\n' << "Writing output..." << std::endl;
-
-  // int testIndx = 7224368 - 10;
-  // std::cout << "Image = " << scienceImg[testIndx]
-  //           << ", Convolved = " << outImg[testIndx] * invKernSum
-  //           << ", inverse norm = " << invKernSum
-  //           << ", Sub = " << diffImg[testIndx] << std::endl;
   err = writeImage(diffImg);
   checkError(err);
-
-  std::cout << '\n' << "BACH finished." << std::endl;
 
   clock_t p16 = clock();
   printf("Fin took %ds %dms\n", (p16 - p15) / CLOCKS_PER_SEC,
          ((p16 - p15) * 1000 / CLOCKS_PER_SEC) % 1000);
+
+  std::cout << "\nBACH finished." << std::endl;
 
   printf("BACH took %ds %dms\n", (p16 - p1) / CLOCKS_PER_SEC,
          ((p16 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
