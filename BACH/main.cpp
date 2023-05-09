@@ -219,9 +219,27 @@ int main(int argc, char* argv[]) {
   // conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
-  for(int p = 0; p < templateImg.size(); p++)
-    seqConvolve(convKernels, args.fKernelWidth, templateImg, outImg, w, h, p);
-  std::vector<cl_double> tmpOut(outImg.size());
+
+  for(int xStep = 0; xStep < xSteps; xStep++) {
+    for(int yStep = 0; yStep < ySteps; yStep++) {
+      makeKernel(
+          convolutionKernel, templateImg.axis,
+          xStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth,
+          yStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth);
+      for(int y = 0; y < args.fKernelWidth; y++) {
+        int j = yStep * args.fKernelWidth + args.hKernelWidth + y;
+        if(j >= h - args.hKernelWidth) break;
+        for(int x = 0; x < args.fKernelWidth; x++) {
+          int i = xStep * args.fKernelWidth + args.hKernelWidth + x;
+          if(i >= w - args.hKernelWidth) break;
+          int p = i + j * w;
+          seqConvolve(convolutionKernel.currKernel, args.fKernelWidth,
+                      templateImg, outImg, w, h, p);
+        }
+      }
+    }
+  }
+  std::vector<cl_double> tmpOut = outImg.data;
   // err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
   //                               sizeof(cl_double) * w * h, &tmpOut[0]);
   // checkError(err);

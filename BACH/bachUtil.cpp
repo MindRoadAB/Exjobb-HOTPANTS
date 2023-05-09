@@ -439,17 +439,19 @@ void seqConvolve(std::vector<cl_double>& convKern, long convWidth, Image& image,
   int yS = y / convWidth;
 
   int convOffset = (xS + (yS * xSteps)) * convWidth * convWidth;
+  double convSum = 0.0;
 
-  for(long j = -(convWidth / 2); j <= convWidth / 2; j++) {
-    for(long i = -(convWidth / 2); i <= convWidth / 2; i++) {
-      if((x + i >= 0) && (x + i < w) && (y + j >= 0) && (y + j < h)) {
-        long convIndex = -i + convWidth / 2 + (-j + convWidth / 2) * convWidth;
-        convIndex += convOffset;
-        long imgIndex = x + i + w * (j + y);
-        acc += convKern[convIndex] * image[imgIndex];
-      }
+  for(long j = y - (convWidth / 2); j <= y + convWidth / 2; j++) {
+    int jk = y - j + (convWidth / 2);
+    for(long i = x - (convWidth / 2); i <= x + convWidth / 2; i++) {
+      int ik = x - i + (convWidth / 2);
+      long convIndex = ik + jk * convWidth;
+      // convIndex += convOffset;
+      long imgIndex = i + w * j;
+      acc += convKern[convIndex] * image[imgIndex];
+      convSum += convKern[convIndex];
     }
   }
 
-  outimg.data[id] = acc;
+  outimg.data[id] = acc / convSum;
 }
