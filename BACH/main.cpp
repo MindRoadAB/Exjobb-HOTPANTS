@@ -273,17 +273,6 @@ int main(int argc, char* argv[]) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
-      outImg.data[x + y * w] *= invKernSum;
-    }
-  }
-
-  err = writeImage(outImg);
-  checkError(err);
-
-  // Revert scale by sum kernel for use in subtraction.
-  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
-    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
-      outImg.data[x + y * w] *= kernSum;
     }
   }
 
@@ -326,6 +315,22 @@ int main(int argc, char* argv[]) {
 
   clock_t p15 = clock();
   std::cout << "\nWriting output..." << std::endl;
+
+  // Scale by kernel sum for output of convoluted image.
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= invKernSum;
+    }
+  }
+
+  err = writeImage(outImg);
+  checkError(err);
+
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= kernSum;
+    }
+  }
 
   err = writeImage(diffImg);
   checkError(err);
