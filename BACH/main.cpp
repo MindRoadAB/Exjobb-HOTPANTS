@@ -216,11 +216,6 @@ int main(int argc, char* argv[]) {
 
   Image outImg{args.outName, templateImg.axis, args.outPath};
 
-  // for(int p = 0; p < templateImg.size(); p++) {
-  //   seqConvolve(convKernels, args.fKernelWidth, templateImg, outImg, w, h,
-  //   p);
-  // }
-
   std::vector<cl_double> tmpOut(templateImg.size());
   err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
                                 sizeof(cl_double) * w * h, &tmpOut[0]);
