@@ -5,35 +5,36 @@
 void createB(Stamp& s, Image& img) {
   /* Does Equation 2.13 which create the right side of the Equation Ma=B */
 
+  s.B = {};
   s.B.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int i = 0; i < args.nPSF; i++) {
-    cl_double p0 = 0.0;
+    double p0 = 0.0;
     for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
       for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
         int k =
             x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
         int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-        if(img.masked(x + ssx, y + ssy, Image::nan))
-          p0 += s.W[i][k] * 1e-10;
-        else
-          p0 += s.W[i][k] * img[imgIndex];
+        // if(img.masked(x + ssx, y + ssy, Image::nan))
+        //   p0 += s.W[i][k] * 1e-10;
+        // else
+        p0 += s.W[i][k] * img[imgIndex];
       }
     }
     s.B.push_back(p0);
   }
 
-  cl_double q = 0.0;
+  double q = 0.0;
   for(int x = -args.hSStampWidth; x <= args.hSStampWidth; x++) {
     for(int y = -args.hSStampWidth; y <= args.hSStampWidth; y++) {
       int k =
           x + args.hSStampWidth + args.fSStampWidth * (y + args.hSStampWidth);
       int imgIndex = x + ssx + (y + ssy) * img.axis.first;
-      if(img.masked(x + ssx, y + ssy, Image::nan))
-        q += s.W[args.nPSF][k] * 1e-10;
-      else
-        q += s.W[args.nPSF][k] * img[imgIndex];
+      // if(img.masked(x + ssx, y + ssy, Image::nan))
+      //   q += s.W[args.nPSF][k] * 1e-10;
+      // else
+      q += s.W[args.nPSF][k] * img[imgIndex];
     }
   }
   s.B.push_back(q);
@@ -50,7 +51,7 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
   s.W.emplace_back();
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
-  std::vector<cl_double> tmp{};
+  std::vector<float> tmp{};
 
   // Convolve Image with filterY taking pixels in a (args.hSStampWidth +
   // args.hKernelWidth) area around a substamp.
@@ -61,7 +62,8 @@ void convStamp(Stamp& s, Image& img, Kernel& k, int n, int odd) {
 
       for(int y = -args.hKernelWidth; y <= args.hKernelWidth; y++) {
         int imgIndex = i + (j + y) * img.axis.first;
-        cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        // cl_double v = std::isnan(img[imgIndex]) ? 1e-10 : img[imgIndex];
+        float v = img[imgIndex];
         tmp.back() += v * k.filterY[n][args.hKernelWidth - y];
       }
     }
@@ -99,7 +101,7 @@ void cutSStamp(SubStamp& ss, Image& img) {
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
       ss.sum += img.masked(imgX, imgY, Image::badInput, Image::nan)
                     ? 0.0
-                    : abs(img[imgX + imgY * img.axis.first]);
+                    : std::abs(img[imgX + imgY * img.axis.first]);
     }
   }
 }
@@ -108,16 +110,18 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
   /* Fills Substamp with gaussian basis convolved images around said substamp
    * and claculates CMV.
    */
+
   if(s.subStamps.empty()) {
-    if(args.verbose)
+    if(args.verbose) {
       std::cout << "No eligable substamps in stamp at x = " << s.coords.first
                 << " y = " << s.coords.second << ", stamp rejected"
                 << std::endl;
+    }
     return 1;
   }
 
   int nvec = 0;
-  s.W = std::vector<std::vector<cl_double>>();
+  s.W = std::vector<std::vector<double>>();
   for(int g = 0; g < cl_int(args.dg.size()); g++) {
     for(int x = 0; x <= args.dg[g]; x++) {
       for(int y = 0; y <= args.dg[g] - x; y++) {
@@ -135,11 +139,6 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
 
   cutSStamp(s.subStamps[0], sImg);
 
-  while(!s.subStamps.empty() && s.subStamps[0].sum == 0) {
-    s.subStamps.erase(s.subStamps.begin());
-    cutSStamp(s.subStamps[0], sImg);
-  }
-
   auto [ssx, ssy] = s.subStamps[0].imageCoords;
 
   for(int j = 0; j <= args.backgroundOrder; j++) {
@@ -147,18 +146,21 @@ int fillStamp(Stamp& s, Image& tImg, Image& sImg, Kernel& k) {
       s.W.emplace_back();
     }
   }
-
-  for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
-    for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
-      cl_double ax = 1.0;
+  for(int y = ssy - args.hSStampWidth; y <= ssy + args.hSStampWidth; y++) {
+    double yf =
+        (y - float(tImg.axis.second * 0.5)) / float(tImg.axis.second * 0.5);
+    for(int x = ssx - args.hSStampWidth; x <= ssx + args.hSStampWidth; x++) {
+      double xf =
+          (x - float(tImg.axis.first * 0.5)) / float(tImg.axis.first * 0.5);
+      double ax = 1.0;
       cl_int nBGVec = 0;
       for(int j = 0; j <= args.backgroundOrder; j++) {
-        cl_double ay = 1.0;
+        double ay = 1.0;
         for(int k = 0; k <= args.backgroundOrder - j; k++) {
           s.W[args.nPSF + nBGVec++].push_back(ax * ay);
-          ay *= (y - tImg.axis.second * 0.5) / tImg.axis.second * 0.5;
+          ay *= yf;
         }
-        ax *= (x - tImg.axis.first * 0.5) / tImg.axis.first * 0.5;
+        ax *= xf;
       }
     }
   }

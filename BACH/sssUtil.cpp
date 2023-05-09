@@ -12,36 +12,27 @@ int identifySStamps(std::vector<Stamp>& stamps, Image& image) {
     if(!s.subStamps.empty()) hasSStamps++;
     index++;
   }
+
   stamps.erase(std::remove_if(stamps.begin(), stamps.end(),
                               [](Stamp& s) { return s.subStamps.empty(); }),
                stamps.end());
+
+  if(args.verbose) {
+    std::cout << "Non-Empty stamps: " << stamps.size() << std::endl;
+  }
+
   return hasSStamps;
 }
 
 void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
-  args.fStampWidth =
-      std::min(w / args.stampsx, h / args.stampsy) - args.fKernelWidth;
-  args.fStampWidth -= args.fStampWidth % 2 == 0 ? 1 : 0;
-  args.hStampWidth = args.fStampWidth / 2;
-
   for(int j = 0; j < args.stampsy; j++) {
     for(int i = 0; i < args.stampsx; i++) {
-      int stampw = w / args.stampsx;
-      int stamph = h / args.stampsy;
-      int startx = i * stampw;
-      int starty = j * stamph;
-      int stopx = startx + stampw;
-      int stopy = starty + stamph;
-
-      if(i == args.stampsx - 1) {
-        stopx = w;
-        stampw = stopx - startx;
-      }
-
-      if(j == args.stampsy - 1) {
-        stopy = h;
-        stamph = stopy - starty;
-      }
+      int startx = i * (double(w) / double(args.stampsx));
+      int starty = j * (double(h) / double(args.stampsy));
+      int stopx = std::min(startx + args.fStampWidth, w);
+      int stopy = std::min(starty + args.fStampWidth, h);
+      int stampw = stopx - startx;
+      int stamph = stopy - starty;
 
       int centerx = stampw / 2;
       int centery = stamph / 2;
@@ -49,7 +40,7 @@ void createStamps(Image& img, std::vector<Stamp>& stamps, int w, int h) {
       Stamp tmpS{};
       for(int y = 0; y < stamph; y++) {
         for(int x = 0; x < stampw; x++) {
-          cl_double tmp = img[(startx + x) + ((starty + y) * w)];
+          double tmp = img[(startx + x) + ((starty + y) * w)];
           tmpS.data.push_back(tmp);
         }
       }
@@ -66,13 +57,15 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
   double retVal = 0.0;
   for(int y = sstamp.imageCoords.second - args.hSStampWidth;
       y <= sstamp.imageCoords.second + args.hSStampWidth; y++) {
-    if(y < 0 || y >= image.axis.second) continue;
+    if(y < stamp.coords.second || y >= stamp.coords.second + stamp.size.second)
+      continue;
     for(int x = sstamp.imageCoords.first - args.hSStampWidth;
         x <= sstamp.imageCoords.first + args.hSStampWidth; x++) {
-      if(x < 0 || x >= image.axis.first) continue;
+      if(x < stamp.coords.first || x >= stamp.coords.first + stamp.size.first)
+        continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.masked(x, y, Image::badPixel, Image::psf)) return 0.0;
+      if(image.anyBadMasked(x, y)) return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
         image.maskPix(x, y, Image::badPixel);
@@ -87,12 +80,12 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
 }
 
 cl_int findSStamps(Stamp& stamp, Image& image, int index) {
-  cl_double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
+  double floor = stamp.stats.skyEst + args.threshKernFit * stamp.stats.fwhm;
 
-  cl_double dfrac = 0.9;
+  double dfrac = 0.9;
   while(stamp.subStamps.size() < size_t(args.maxSStamps)) {
     long absx, absy, coords;
-    cl_double lowestPSFLim =
+    double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
     for(long y = 0; y < args.fStampWidth; y++) {
@@ -101,7 +94,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
         absx = x + stamp.coords.first;
         coords = x + (y * stamp.size.first);
 
-        if(image.masked(absx, absy, Image::badPixel, Image::psf, Image::edge)) {
+        if(image.anyBadMasked(absx, absy)) {
           continue;
         }
 
@@ -134,13 +127,12 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                 continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image[kCoords] >= args.threshHigh) {
-                image.maskPix(kx, ky, Image::badPixel);
+              if(image.anyBadMasked(kx, ky)) {
                 continue;
               }
 
-              if(image.masked(kx, ky, Image::badPixel, Image::psf,
-                              Image::edge)) {
+              if(image[kCoords] >= args.threshHigh) {
+                image.maskPix(kx, ky, Image::badPixel);
                 continue;
               }
 
@@ -159,7 +151,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
             }
           }
           s.val = checkSStamp(s, image, stamp);
-          if(s.val == 0) continue;
+          if(s.val == 0.0) continue;
           stamp.subStamps.push_back(s);
           image.maskSStamp(s, Image::psf);
         }

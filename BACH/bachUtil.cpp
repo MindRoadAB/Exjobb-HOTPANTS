@@ -9,19 +9,30 @@ void checkError(cl_int err) {
   }
 }
 
-void maskInput(Image& img) {
-  for(long y = 0; y < img.axis.second; y++) {
-    for(long x = 0; x < img.axis.first; x++) {
-      long index = x + y * img.axis.first;
+void maskInput(Image& tImg, Image& sImg) {
+  for(long y = 0; y < tImg.axis.second; y++) {
+    for(long x = 0; x < tImg.axis.first; x++) {
+      long index = x + y * tImg.axis.first;
       int borderSize = args.hSStampWidth + args.hKernelWidth;
-      if(x < borderSize || x > img.axis.first - borderSize || y < borderSize ||
-         y > img.axis.second - borderSize)
-        img.maskPix(x, y, Image::edge);
-      if(img[index] >= args.threshHigh || img[index] <= args.threshLow) {
-        img.maskAroundPix(x, y, Image::badInput);
+
+      if(x < borderSize || x > tImg.axis.first - borderSize || y < borderSize ||
+         y > tImg.axis.second - borderSize) {
+        tImg.maskPix(x, y, Image::edge);
+        sImg.maskPix(x, y, Image::edge);
       }
-      if(std::isnan(img[index])) {
-        img.maskPix(x, y, Image::nan);
+
+      if(std::max(tImg[index], sImg[index]) >= args.threshHigh ||
+         std::min(tImg[index], sImg[index]) <= args.threshLow) {
+        tImg.maskPix(x, y, Image::badInput);
+        sImg.maskPix(x, y, Image::badInput);
+      }
+
+      if(std::isnan(tImg[index])) {
+        tImg.maskPix(x, y, Image::nan, Image::badInput);
+      }
+
+      if(std::isnan(sImg[index])) {
+        sImg.maskPix(x, y, Image::nan, Image::badInput);
       }
     }
   }
@@ -31,14 +42,16 @@ bool inImage(Image& image, int x, int y) {
   return !(x < 0 || x > image.axis.first || y < 0 || y > image.axis.second);
 }
 
-void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
+void sigmaClip(std::vector<double>& data, double& mean, double& stdDev,
                int iter) {
   /* Does sigma clipping on data to provide the mean and stdDev of said
    * data
    */
   if(data.empty()) {
     std::cout << "Cannot send in empty vector to Sigma Clip" << std::endl;
-    exit(1);
+    mean = 0.0;
+    stdDev = 1e10;
+    return;
   }
 
   size_t currNPoints = 0;
@@ -65,7 +78,9 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
     } else {
       std::cout << "prevNPoints is: " << prevNPoints
                 << "Needs to be greater than 1" << std::endl;
-      exit(1);
+      mean = 0.0;
+      stdDev = 1e10;
+      return;
     }
 
     prevNPoints = 0;
@@ -73,7 +88,7 @@ void sigmaClip(std::vector<cl_double>& data, cl_double& mean, cl_double& stdDev,
     for(size_t i = 0; i < data.size(); i++) {
       if(!intMask[i]) {
         // Doing the sigmaClip
-        if(abs(data[i] - mean) * invStdDev > args.sigClipAlpha) {
+        if(std::abs(data[i] - mean) * invStdDev > args.sigClipAlpha) {
           intMask[i] = true;
         } else {
           prevNPoints++;
@@ -90,14 +105,14 @@ void calcStats(Stamp& stamp, Image& image) {
    * TODO: Compare results on same stamp on this and old version.
    */
 
-  cl_double median, lfwhm, sum;  // temp for now
+  double median, sum;
 
-  std::vector<cl_double> values{};
+  std::vector<double> values{};
   std::vector<cl_int> bins(256, 0);
 
   cl_int nValues = 100;
-  cl_double upProc = 0.9;
-  cl_double midProc = 0.5;
+  double upProc = 0.9;
+  double midProc = 0.5;
   cl_int numPix = stamp.size.first * stamp.size.second;
 
   if(numPix < nValues) {
@@ -122,7 +137,8 @@ void calcStats(Stamp& stamp, Image& image) {
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
 
-    if(image.masked(xI, yI, Image::badInput, Image::nan) || stamp[indexS] < 0) {
+    if(image.masked(xI, yI, Image::badInput, Image::nan) ||
+       stamp[indexS] < 1e-10 || std::isnan(stamp[indexS])) {
       continue;
     }
 
@@ -132,16 +148,16 @@ void calcStats(Stamp& stamp, Image& image) {
   std::sort(begin(values), end(values));
 
   // Width of a histogram bin.
-  cl_double binSize = (values[(int)(upProc * values.size())] -
-                       values[(int)(midProc * values.size())]) /
-                      (cl_double)nValues;
+  double binSize = (values[(int)(upProc * values.size())] -
+                    values[(int)(midProc * values.size())]) /
+                   (double)nValues;
 
   // Value of lowest bin.
-  cl_double lowerBinVal =
+  double lowerBinVal =
       values[(int)(midProc * values.size())] - (128.0 * binSize);
 
   // Contains all good Pixels in the stamp, aka not masked.
-  std::vector<cl_double> maskedStamp{};
+  std::vector<double> maskedStamp{};
   for(int x = 0; x < stamp.size.first; x++) {
     for(int y = 0; y < stamp.size.second; y++) {
       // Pixel in stamp in stamp coords.
@@ -151,23 +167,26 @@ void calcStats(Stamp& stamp, Image& image) {
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
 
-      if(!image.masked(xI, yI, Image::badInput, Image::nan) &&
-         stamp[indexS] >= 0) {
-        maskedStamp.push_back(stamp[indexS]);
+      if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel,
+                      Image::nan) ||
+         image[xI + yI * image.axis.first] <= 1e-10) {
+        continue;
       }
+
+      maskedStamp.push_back(stamp[indexS]);
     }
   }
 
   // sigma clip of maskedStamp to get mean and sd.
-  cl_double mean, stdDev, invStdDev;
+  double mean, stdDev, invStdDev;
   sigmaClip(maskedStamp, mean, stdDev, 3);
   invStdDev = 1.0 / stdDev;
 
   int attempts = 0;
   cl_int okCount = 0;
-  cl_double sumBins = 0.0;
-  cl_double sumExpect = 0.0;
-  cl_double lower, upper;
+  double sumBins = 0.0;
+  double sumExpect = 0.0;
+  double lower, upper;
   while(true) {
     if(attempts >= 5) {
       std::cout << "Creation of histogram unsuccessful after 5 attempts";
@@ -188,8 +207,9 @@ void calcStats(Stamp& stamp, Image& image) {
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
 
-        if(image.masked(xI, yI, Image::badInput, Image::nan) ||
-           stamp[indexS] < 0) {
+        if(image.masked(xI, yI, Image::badInput, Image::badPixel, Image::edge,
+                        Image::nan) ||
+           image[xI + yI * image.axis.first] <= 1e-10) {
           continue;
         }
 
@@ -208,10 +228,10 @@ void calcStats(Stamp& stamp, Image& image) {
 
     if(okCount == 0 || binSize == 0.0) {
       std::cout << "No good pixels or variation in pixels" << std::endl;
-      exit(1);
+      return;
     }
 
-    cl_double maxDens = 0.0;
+    double maxDens = 0.0;
     int lowerIndex, upperIndex, maxIndex = -1;
     for(lowerIndex = upperIndex = 1; upperIndex < 255;
         sumBins -= bins[lowerIndex++]) {
@@ -230,7 +250,8 @@ void calcStats(Stamp& stamp, Image& image) {
       sumBins += bins[i];
       sumExpect += i * bins[i];
     }
-    cl_double modeBin = sumExpect / sumBins + 0.5;
+
+    double modeBin = sumExpect / sumBins + 0.5;
     stamp.stats.skyEst = lowerBinVal + binSize * (modeBin - 1.0);
 
     lower = okCount * 0.25;
@@ -266,15 +287,14 @@ void calcStats(Stamp& stamp, Image& image) {
   for(i = 0, sumBins = 0; sumBins < okCount / 2.0; sumBins += bins[i++])
     ;
   median = i - (sumBins - okCount / 2.0) / bins[i - 1];
-  lfwhm = binSize * (median - lower) * 2.0 / args.iqRange;
   median = lowerBinVal + binSize * (median - 1.0);
 }
 
-int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
-           std::vector<int>& index, cl_double& d) {
-  std::vector<cl_double> vv(matrixSize + 1, 0.0);
+int ludcmp(std::vector<std::vector<double>>& matrix, int matrixSize,
+           std::vector<int>& index, double& d) {
+  std::vector<double> vv(matrixSize + 1, 0.0);
   int maxI{};
-  cl_double temp2{};
+  double temp2{};
 
   d = 1.0;
 
@@ -337,8 +357,8 @@ int ludcmp(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
   return 0;
 }
 
-void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
-            std::vector<int>& index, std::vector<cl_double>& result) {
+void lubksb(std::vector<std::vector<double>>& matrix, int matrixSize,
+            std::vector<int>& index, std::vector<double>& result) {
   int ii{};
 
   for(int i = 1; i <= matrixSize; i++) {
@@ -364,26 +384,28 @@ void lubksb(std::vector<std::vector<cl_double>>& matrix, int matrixSize,
   }
 }
 
-cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
-                     int y) {
+double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
+                  int y) {
   /*
    * Calculates the kernel for a certain pixel, need finished kernelSol.
    */
 
   int k = 2;
-  std::vector<cl_double> kernCoeffs(args.nPSF, 0.0);
-  std::pair<cl_long, cl_long> hImgAxis =
+  std::vector<double> kernCoeffs(args.nPSF, 0.0);
+  std::pair<double, double> hImgAxis =
       std::make_pair(0.5 * imgSize.first, 0.5 * imgSize.second);
+  double xf = (x - hImgAxis.first) / hImgAxis.first;
+  double yf = (y - hImgAxis.second) / hImgAxis.second;
 
   for(int i = 1; i < args.nPSF; i++) {
     double aX = 1.0;
-    for(int iX = 0; iX < -args.kernelOrder; iX++) {
+    for(int iX = 0; iX <= args.kernelOrder; iX++) {
       double aY = 1.0;
-      for(int iY = 0; iY < -args.kernelOrder - iX; iY++) {
+      for(int iY = 0; iY <= args.kernelOrder - iX; iY++) {
         kernCoeffs[i] += kern.solution[k++] * aX * aY;
-        aY *= cl_double(y - hImgAxis.second) / hImgAxis.second;
+        aY *= yf;
       }
-      aX *= cl_double(x - hImgAxis.first) / hImgAxis.first;
+      aX *= xf;
     }
   }
   kernCoeffs[0] = kern.solution[1];
@@ -392,7 +414,7 @@ cl_double makeKernel(Kernel& kern, std::pair<cl_long, cl_long> imgSize, int x,
     kern.currKernel[i] = 0.0;
   }
 
-  cl_double sumKernel = 0.0;
+  double sumKernel = 0.0;
   for(int i = 0; i < args.fKernelWidth * args.fKernelWidth; i++) {
     for(int psf = 0; psf < args.nPSF; psf++) {
       kern.currKernel[i] += kernCoeffs[psf] * kern.kernVec[psf][i];
