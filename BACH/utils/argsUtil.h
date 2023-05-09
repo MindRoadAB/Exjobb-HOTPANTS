@@ -50,6 +50,7 @@ struct Arguments {
   };
 
   bool verbose = false;
+  bool verboseTime = false;
 };
 
 inline char* getCmdOption(char** begin, char** end, const std::string& option) {
@@ -82,6 +83,10 @@ inline void getArguments(int argc, char* argv[]) {
 
   if(cmdOptionExists(argv, argv + argc, "-v")) {
     args.verbose = true;
+  }
+
+  if(cmdOptionExists(argv, argv + argc, "-vt")) {
+    args.verboseTime = true;
   }
 
   if(cmdOptionExists(argv, argv + argc, "-t")) {

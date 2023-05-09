@@ -60,8 +60,10 @@ int main(int argc, char* argv[]) {
       load_build_programs(context, default_device, "conv.cl", "sub.cl");
 
   clock_t p2 = clock();
-  printf("Initiation took %ds %dms\n", (p2 - p1) / CLOCKS_PER_SEC,
-         ((p2 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("Initiation took %lds %ldms\n", (p2 - p1) / CLOCKS_PER_SEC,
+           ((p2 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== SSS ===== */
 
@@ -133,8 +135,10 @@ int main(int argc, char* argv[]) {
   }
 
   clock_t p4 = clock();
-  printf("SSS took %ds %dms\n", (p4 - p3) / CLOCKS_PER_SEC,
-         ((p4 - p3) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("SSS took %lds %ldms\n", (p4 - p3) / CLOCKS_PER_SEC,
+           ((p4 - p3) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   std::cout << std::endl;
 
@@ -153,8 +157,10 @@ int main(int argc, char* argv[]) {
   }
 
   clock_t p6 = clock();
-  printf("CMV took %ds %dms\n", (p6 - p5) / CLOCKS_PER_SEC,
-         ((p6 - p5) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("CMV took %lds %ldms\n", (p6 - p5) / CLOCKS_PER_SEC,
+           ((p6 - p5) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== CD ===== */
 
@@ -175,8 +181,10 @@ int main(int argc, char* argv[]) {
     std::cout << templateImg.name << " chosen to be convolved." << std::endl;
 
   clock_t p8 = clock();
-  printf("CD took %ds %dms\n", (p8 - p7) / CLOCKS_PER_SEC,
-         ((p8 - p7) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("CD took %lds %ldms\n", (p8 - p7) / CLOCKS_PER_SEC,
+           ((p8 - p7) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== KSC ===== */
 
@@ -187,8 +195,10 @@ int main(int argc, char* argv[]) {
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 
   clock_t p10 = clock();
-  printf("KSC took %ds %dms\n", (p10 - p9) / CLOCKS_PER_SEC,
-         ((p10 - p9) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("KSC took %lds %ldms\n", (p10 - p9) / CLOCKS_PER_SEC,
+           ((p10 - p9) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== Conv ===== */
 
@@ -263,23 +273,14 @@ int main(int argc, char* argv[]) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
           getBackground(x, y, convolutionKernel.solution, templateImg.axis);
-      outImg.data[x + y * w] *= invKernSum;
-    }
-  }
-
-  err = writeImage(outImg);
-  checkError(err);
-
-  // Revert scale by sum kernel for use in subtraction.
-  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
-    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
-      outImg.data[x + y * w] *= kernSum;
     }
   }
 
   clock_t p12 = clock();
-  printf("Conv took %ds %dms\n", (p12 - p11) / CLOCKS_PER_SEC,
-         ((p12 - p11) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("Conv took %lds %ldms\n", (p12 - p11) / CLOCKS_PER_SEC,
+           ((p12 - p11) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== Sub ===== */
 
@@ -305,25 +306,47 @@ int main(int argc, char* argv[]) {
   checkError(err);
 
   clock_t p14 = clock();
-  printf("Sub took %ds %dms\n", (p14 - p13) / CLOCKS_PER_SEC,
-         ((p14 - p13) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("Sub took %lds %ldms\n", (p14 - p13) / CLOCKS_PER_SEC,
+           ((p14 - p13) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   /* ===== Fin ===== */
 
   clock_t p15 = clock();
   std::cout << "\nWriting output..." << std::endl;
 
+  // Scale by kernel sum for output of convoluted image.
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= invKernSum;
+    }
+  }
+
+  err = writeImage(outImg);
+  checkError(err);
+
+  for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
+    for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
+      outImg.data[x + y * w] *= kernSum;
+    }
+  }
+
   err = writeImage(diffImg);
   checkError(err);
 
   clock_t p16 = clock();
-  printf("Fin took %ds %dms\n", (p16 - p15) / CLOCKS_PER_SEC,
-         ((p16 - p15) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("Fin took %lds %ldms\n", (p16 - p15) / CLOCKS_PER_SEC,
+           ((p16 - p15) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   std::cout << "\nBACH finished." << std::endl;
 
-  printf("BACH took %ds %dms\n", (p16 - p1) / CLOCKS_PER_SEC,
-         ((p16 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+  if(args.verboseTime) {
+    printf("BACH took %lds %ldms\n", (p16 - p1) / CLOCKS_PER_SEC,
+           ((p16 - p1) * 1000 / CLOCKS_PER_SEC) % 1000);
+  }
 
   return 0;
 }
