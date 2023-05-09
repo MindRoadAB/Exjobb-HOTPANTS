@@ -15,3 +15,5 @@
 # Don't ignore all subfolders
 !*/
 */build/*
+
+!hotpants/*
