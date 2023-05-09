@@ -160,6 +160,8 @@ int main(int argc, char* argv[]) {
 
   std::cout << "\nConvolving..." << std::endl;
 
+  // Convolution kernels generated beforehand since we only need on per
+  // kernelsize.
   std::vector<cl_double> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
@@ -175,6 +177,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  // Used to normalize the result since the kernel sum is not always 1.
   double kernSum =
       makeKernel(convolutionKernel, templateImg.axis,
                  templateImg.axis.first / 2, templateImg.axis.second / 2);
@@ -186,25 +189,23 @@ int main(int argc, char* argv[]) {
   }
 
   // Declare all the buffers which will be need in opencl operations.
-  cl::Buffer timgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer simgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer convimgbuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer kernbuf(context, CL_MEM_READ_ONLY,
+  cl::Buffer tImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer sImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer convImgBuf(context, CL_MEM_READ_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer kernBuf(context, CL_MEM_READ_ONLY,
                      sizeof(cl_double) * convKernels.size());
-  cl::Buffer outimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
-  cl::Buffer diffimgbuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer outImgBuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
+  cl::Buffer diffImgBuf(context, CL_MEM_WRITE_ONLY, sizeof(cl_double) * w * h);
 
   cl::CommandQueue queue(context, default_device);
 
-  err = queue.enqueueWriteBuffer(kernbuf, CL_TRUE, 0,
+  // Write necessary data for convolution
+  err = queue.enqueueWriteBuffer(kernBuf, CL_TRUE, 0,
                                  sizeof(cl_double) * convKernels.size(),
                                  &convKernels[0]);
   checkError(err);
-
-  err = queue.enqueueWriteBuffer(
-      timgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(templateImg.data.begin(),
-                              templateImg.data.end())[0]);
+  err = queue.enqueueWriteBuffer(tImgBuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 &templateImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl_long, cl::Buffer, cl::Buffer, cl_long,
@@ -212,17 +213,16 @@ int main(int argc, char* argv[]) {
       conv{program, "conv"};
   cl::EnqueueArgs eargs{queue, cl::NullRange, cl::NDRange(w * h),
                         cl::NullRange};
-  conv(eargs, kernbuf, args.fKernelWidth, timgbuf, outimgbuf, w, h);
+  conv(eargs, kernBuf, args.fKernelWidth, tImgBuf, outImgBuf, w, h);
 
+  // Read data from convolution
   Image outImg{args.outName, templateImg.axis, args.outPath};
 
-  std::vector<cl_double> tmpOut(templateImg.size());
-  err = queue.enqueueReadBuffer(outimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &tmpOut[0]);
+  err = queue.enqueueReadBuffer(outImgBuf, CL_TRUE, 0,
+                                sizeof(cl_double) * w * h, &outImg);
   checkError(err);
 
-  outImg.data = tmpOut;
-
+  // Add background and scale by kernel sum for output of convoluted image.
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] +=
@@ -234,6 +234,7 @@ int main(int argc, char* argv[]) {
   err = writeImage(outImg);
   checkError(err);
 
+  // Revert scale by sum kernel for use in subtraction.
   for(int y = args.hKernelWidth; y < h - args.hKernelWidth; y++) {
     for(int x = args.hKernelWidth; x < w - args.hKernelWidth; x++) {
       outImg.data[x + y * w] *= kernSum;
@@ -242,27 +243,22 @@ int main(int argc, char* argv[]) {
 
   std::cout << "\nSubtracting images..." << std::endl;
 
-  err = queue.enqueueWriteBuffer(
-      convimgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(outImg.data.begin(), outImg.data.end())[0]);
-  checkError(err);
-
-  err = queue.enqueueWriteBuffer(
-      simgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
-      &std::vector<cl_double>(scienceImg.data.begin(),
-                              scienceImg.data.end())[0]);
+  // Write necessary data for subtraction
+  err = queue.enqueueWriteBuffer(convImgBuf, CL_TRUE, 0,
+                                 sizeof(cl_double) * w * h, &outImg);
+  err = queue.enqueueWriteBuffer(sImgBuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
+                                 &scienceImg);
   checkError(err);
 
   cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_double> sub{program,
                                                                        "sub"};
-  sub(eargs, simgbuf, convimgbuf, diffimgbuf, invKernSum);
+  sub(eargs, sImgBuf, convImgBuf, diffImgBuf, invKernSum);
 
+  // Read data from subtraction
   Image diffImg{"sub.fits", templateImg.axis, args.outPath};
-  err = queue.enqueueReadBuffer(diffimgbuf, CL_TRUE, 0,
-                                sizeof(cl_double) * w * h, &tmpOut[0]);
+  err = queue.enqueueReadBuffer(diffImgBuf, CL_TRUE, 0,
+                                sizeof(cl_double) * w * h, &diffImg);
   checkError(err);
-
-  diffImg.data = tmpOut;
 
   std::cout << "\nWriting output..." << std::endl;
 
