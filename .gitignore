@@ -11,9 +11,9 @@
 !.clang-format
 !CMakeLists.txt
 
+!*.c
+!hotpants/*.fits
 
 # Don't ignore all subfolders
 !*/
 */build/*
-
-!hotpants/*
