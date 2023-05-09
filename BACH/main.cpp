@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::cout << '\n' << "Reading in images..." << std::endl;
+  std::cout << "\nReading in images..." << std::endl;
 
   Image templateImg{args.templateName};
   Image scienceImg{args.scienceName};
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  std::cout << '\n' << "Setting up openCL..." << std::endl;
+  std::cout << "\nSetting up openCL..." << std::endl;
 
   cl::Device default_device{get_default_device()};
   cl::Context context{default_device};
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 
   /* ===== SSS ===== */
 
-  std::cout << '\n' << "Creating stamps..." << std::endl;
+  std::cout << "\nCreating stamps..." << std::endl;
 
   args.fStampWidth = std::min(int(templateImg.axis.first / args.stampsx),
                               int(templateImg.axis.second / args.stampsy));
@@ -122,11 +122,9 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  std::cout << std::endl;
-
   /* ===== CMV ===== */
 
-  std::cout << "Calculating matrix variables..." << std::endl;
+  std::cout << "\nCalculating matrix variables..." << std::endl;
 
   Kernel convolutionKernel{};
   for(auto& s : templateStamps) {
@@ -138,7 +136,7 @@ int main(int argc, char* argv[]) {
 
   /* ===== CD ===== */
 
-  std::cout << '\n' << "Choosing convolution direction..." << std::endl;
+  std::cout << "\nChoosing convolution direction..." << std::endl;
 
   double templateMerit = testFit(templateStamps, templateImg, scienceImg);
   double scienceMerit = testFit(sciStamps, scienceImg, templateImg);
@@ -154,15 +152,13 @@ int main(int argc, char* argv[]) {
 
   /* ===== KSC ===== */
 
-  std::cout << '\n' << "Fitting kernel..." << std::endl;
+  std::cout << "\nFitting kernel..." << std::endl;
 
   fitKernel(convolutionKernel, templateStamps, templateImg, scienceImg);
 
-  std::cout << std::endl;
-
   /* ===== Conv ===== */
 
-  std::cout << "Convolving..." << std::endl;
+  std::cout << "\nConvolving..." << std::endl;
 
   std::vector<cl_double> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
@@ -178,12 +174,6 @@ int main(int argc, char* argv[]) {
                          convolutionKernel.currKernel.end());
     }
   }
-  // while(true) {
-  //   int aaaa;
-  //   std::cin >> aaaa;
-  //   std::cout << "kernval at " << aaaa << ": " << convKernels[aaaa][0]
-  //             << std::endl;
-  // }
 
   double kernSum =
       makeKernel(convolutionKernel, templateImg.axis,
@@ -255,7 +245,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << '\n' << "Subtracting images..." << std::endl;
+  std::cout << "\nSubtracting images..." << std::endl;
 
   err = queue.enqueueWriteBuffer(
       convimgbuf, CL_TRUE, 0, sizeof(cl_double) * w * h,
@@ -279,16 +269,11 @@ int main(int argc, char* argv[]) {
 
   diffImg.data = tmpOut;
 
-  std::cout << '\n' << "Writing output..." << std::endl;
+  std::cout << "\nWriting output..." << std::endl;
 
-  // int testIndx = 7224368 - 10;
-  // std::cout << "Image = " << scienceImg[testIndx]
-  //           << ", Convolved = " << outImg[testIndx] * invKernSum
-  //           << ", inverse norm = " << invKernSum
-  //           << ", Sub = " << diffImg[testIndx] << std::endl;
   err = writeImage(diffImg);
   checkError(err);
 
-  std::cout << '\n' << "BACH finished." << std::endl;
+  std::cout << "\nBACH finished." << std::endl;
   return 0;
 }
