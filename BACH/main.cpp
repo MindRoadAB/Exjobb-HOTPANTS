@@ -164,20 +164,24 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Convolving..." << std::endl;
 
-  std::vector<cl_double> convKernels{};
+  std::vector<std::vector<cl_double>> convKernels{};
   int xSteps = std::ceil((templateImg.axis.first) / double(args.fKernelWidth));
   int ySteps = std::ceil((templateImg.axis.second) / double(args.fKernelWidth));
-  for(int y = 0; y < ySteps; y++) {
-    int imgY = y * args.fKernelWidth + args.hKernelWidth;
-    for(int x = 0; x < xSteps; x++) {
-      int imgX = x * args.fKernelWidth + args.hKernelWidth;
-      makeKernel(convolutionKernel, templateImg.axis, imgX + args.hKernelWidth,
-                 imgY + args.hKernelWidth);
-      convKernels.insert(convKernels.end(),
-                         convolutionKernel.currKernel.begin(),
-                         convolutionKernel.currKernel.end());
+  for(int xStep = 0; xStep < xSteps; xStep++) {
+    for(int yStep = 0; yStep < ySteps; yStep++) {
+      makeKernel(
+          convolutionKernel, templateImg.axis,
+          xStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth,
+          yStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth);
+      // convKernels.insert(convKernels.end(),
+      //                    convolutionKernel.currKernel.begin(),
+      //                    convolutionKernel.currKernel.end());
+      convKernels.push_back(convolutionKernel.currKernel);
     }
   }
+  int aaaa = 199;
+  std::cout << "kernval at " << aaaa << ": " << convKernels[aaaa][0]
+            << std::endl;
 
   double kernSum =
       makeKernel(convolutionKernel, templateImg.axis,
@@ -222,10 +226,7 @@ int main(int argc, char* argv[]) {
 
   for(int xStep = 0; xStep < xSteps; xStep++) {
     for(int yStep = 0; yStep < ySteps; yStep++) {
-      makeKernel(
-          convolutionKernel, templateImg.axis,
-          xStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth,
-          yStep * args.fKernelWidth + args.hKernelWidth + args.hKernelWidth);
+      int kernIndx = xStep + yStep * xSteps;
       for(int y = 0; y < args.fKernelWidth; y++) {
         int j = yStep * args.fKernelWidth + args.hKernelWidth + y;
         if(j >= h - args.hKernelWidth) break;
@@ -233,8 +234,8 @@ int main(int argc, char* argv[]) {
           int i = xStep * args.fKernelWidth + args.hKernelWidth + x;
           if(i >= w - args.hKernelWidth) break;
           int p = i + j * w;
-          seqConvolve(convolutionKernel.currKernel, args.fKernelWidth,
-                      templateImg, outImg, w, h, p);
+          seqConvolve(convKernels[kernIndx], args.fKernelWidth, templateImg,
+                      outImg, w, h, p);
         }
       }
     }
