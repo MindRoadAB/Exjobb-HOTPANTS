@@ -136,9 +136,10 @@ void calcStats(Stamp& stamp, Image& image) {
     // Random pixel in stamp in Image coords.
     cl_int xI = randX + stamp.coords.first;
     cl_int yI = randY + stamp.coords.second;
+    int indexI = xI + yI * image.axis.first;
 
-    if(image.masked(xI, yI, Image::badInput, Image::nan) ||
-       stamp[indexS] < 1e-10 || std::isnan(stamp[indexS])) {
+    if(image.badInputMask[indexI] || image.nanMask[indexI] ||
+       image[indexI] <= 1e-10 || std::isnan(stamp[indexS])) {
       continue;
     }
 
@@ -166,10 +167,11 @@ void calcStats(Stamp& stamp, Image& image) {
       // Pixel in stamp in Image coords.
       cl_int xI = x + stamp.coords.first;
       cl_int yI = y + stamp.coords.second;
+      int indexI = xI + yI * image.axis.first;
 
-      if(image.masked(xI, yI, Image::badInput, Image::edge, Image::badPixel,
-                      Image::nan) ||
-         image[xI + yI * image.axis.first] <= 1e-10) {
+      if(image.badInputMask[indexI] || image.badPixelMask[indexI] ||
+         image.nanMask[indexI] || image.edgeMask[indexI] ||
+         image[indexI] <= 1e-10) {
         continue;
       }
 
@@ -206,10 +208,11 @@ void calcStats(Stamp& stamp, Image& image) {
         // Pixel in stamp in Image coords.
         cl_int xI = x + stamp.coords.first;
         cl_int yI = y + stamp.coords.second;
+        int indexI = xI + yI * image.axis.first;
 
-        if(image.masked(xI, yI, Image::badInput, Image::badPixel, Image::edge,
-                        Image::nan) ||
-           image[xI + yI * image.axis.first] <= 1e-10) {
+        if(image.badInputMask[indexI] || image.badPixelMask[indexI] ||
+           image.nanMask[indexI] || image.edgeMask[indexI] ||
+           image[indexI] <= 1e-10) {
           continue;
         }
 

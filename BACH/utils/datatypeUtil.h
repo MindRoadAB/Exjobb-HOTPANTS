@@ -199,16 +199,14 @@ struct Image {
   std::string path;
   std::pair<cl_long, cl_long> axis;
 
-  enum masks { nan, badInput, badPixel, psf, edge, okConv };
+  enum masks { nan, badInput, badPixel, psf, edge };
   std::vector<double> data{};
 
- private:
   std::vector<bool> nanMask{};
   std::vector<bool> badInputMask{};
   std::vector<bool> badPixelMask{};
   std::vector<bool> psfMask{};
   std::vector<bool> edgeMask{};
-  std::vector<bool> okConvMask{};
 
  public:
   Image(const std::string n, std::pair<cl_long, cl_long> a = {0L, 0L},
@@ -221,8 +219,7 @@ struct Image {
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
         psfMask(this->size(), false),
-        edgeMask(this->size(), false),
-        okConvMask(this->size(), false) {}
+        edgeMask(this->size(), false) {}
 
   Image(const std::string n, std::vector<double> d,
         std::pair<cl_long, cl_long> a, const std::string p = "res/")
@@ -234,8 +231,7 @@ struct Image {
         badInputMask(this->size(), false),
         badPixelMask(this->size(), false),
         psfMask(this->size(), false),
-        edgeMask(this->size(), false),
-        okConvMask(this->size(), false) {}
+        edgeMask(this->size(), false) {}
 
   double* operator&() { return &data[0]; }
 
@@ -260,49 +256,6 @@ struct Image {
     return ptr;
   }
 
-  bool anyMasked(int x, int y) {
-    return masked(x, y, masks::badInput, masks::badPixel, masks::edge,
-                  masks::nan, masks::okConv, masks::psf);
-  }
-
-  bool anyBadMasked(int x, int y) {
-    return masked(x, y, masks::badInput, masks::badPixel, masks::edge,
-                  masks::nan, masks::psf);
-  }
-
-  bool masked(int x, int y, std::same_as<Image::masks> auto... mI) {
-    std::vector<Image::masks> mL{mI...};
-    bool retVal = false;
-
-    for(Image::masks m : mL) {
-      switch(m) {
-        case nan:
-          retVal |= nanMask[x + (y * axis.first)];
-          break;
-        case badInput:
-          retVal |= badInputMask[x + (y * axis.first)];
-          break;
-        case badPixel:
-          retVal |= badPixelMask[x + (y * axis.first)];
-          break;
-        case psf:
-          retVal |= psfMask[x + (y * axis.first)];
-          break;
-        case edge:
-          retVal |= edgeMask[x + (y * axis.first)];
-          break;
-        case okConv:
-          retVal |= okConvMask[x + (y * axis.first)];
-          break;
-        default:
-          std::cout << "Error: Not caught by the switch case" << std::endl;
-          exit(1);
-      }
-    }
-
-    return retVal;
-  }
-
   void maskPix(int x, int y, std::same_as<Image::masks> auto... mI) {
     std::vector<Image::masks> mL{mI...};
     for(Image::masks m : mL) {
@@ -321,9 +274,6 @@ struct Image {
           break;
         case edge:
           edgeMask[x + (y * axis.first)] = true;
-          break;
-        case okConv:
-          okConvMask[x + (y * axis.first)] = true;
           break;
         default:
           std::cout << "Error: Not caught by the switch case" << std::endl;
