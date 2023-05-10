@@ -8,6 +8,7 @@
 !*.h
 !*.cl
 !BACH/res/*.fits
+!BACH/res/*/*.fits
 !.clang-format
 !CMakeLists.txt
 
