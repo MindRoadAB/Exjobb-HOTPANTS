@@ -65,7 +65,10 @@ double checkSStamp(SubStamp& sstamp, Image& image, Stamp& stamp) {
         continue;
 
       int absCoords = x + y * image.axis.first;
-      if(image.anyBadMasked(x, y)) return 0.0;
+      if(image.badInputMask[absCoords] || image.badPixelMask[absCoords] ||
+         image.edgeMask[absCoords] || image.nanMask[absCoords] ||
+         image.psfMask[absCoords])
+        return 0.0;
 
       if(image[absCoords] >= args.threshHigh) {
         image.maskPix(x, y, Image::badPixel);
@@ -84,7 +87,7 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
 
   double dfrac = 0.9;
   while(stamp.subStamps.size() < size_t(args.maxSStamps)) {
-    long absx, absy, coords;
+    long absx, absy, coords, absCoords;
     double lowestPSFLim =
         std::max(floor, stamp.stats.skyEst +
                             (args.threshHigh - stamp.stats.skyEst) * dfrac);
@@ -93,10 +96,12 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
       for(long x = 0; x < args.fStampWidth; x++) {
         absx = x + stamp.coords.first;
         coords = x + (y * stamp.size.first);
+        absCoords = absx + (absy * image.axis.first);
 
-        if(image.anyBadMasked(absx, absy)) {
+        if(image.badInputMask[absCoords] || image.badPixelMask[absCoords] ||
+           image.edgeMask[absCoords] || image.nanMask[absCoords] ||
+           image.psfMask[absCoords])
           continue;
-        }
 
         if(stamp[coords] > args.threshHigh) {
           image.maskPix(absx, absy, Image::badPixel);
@@ -127,9 +132,13 @@ cl_int findSStamps(Stamp& stamp, Image& image, int index) {
                 continue;
               kCoords = kx + (ky * image.axis.first);
 
-              if(image.anyBadMasked(kx, ky)) {
+              if(image.badInputMask[kCoords] || image.badPixelMask[kCoords] ||
+                 image.edgeMask[kCoords] || image.nanMask[kCoords] ||
+                 image.psfMask[kCoords])
                 continue;
-              }
+              // if(image.anyBadMasked(kx, ky)) {
+              //   continue;
+              // }
 
               if(image[kCoords] >= args.threshHigh) {
                 image.maskPix(kx, ky, Image::badPixel);

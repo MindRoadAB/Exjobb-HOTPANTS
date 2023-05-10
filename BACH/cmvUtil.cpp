@@ -97,11 +97,12 @@ void cutSStamp(SubStamp& ss, Image& img) {
 
     for(int x = 0; x < args.fSStampWidth; x++) {
       int imgX = ss.imageCoords.first + x - args.hSStampWidth;
+      int imgCoords = imgX + imgY * img.axis.first;
 
       ss.data.push_back(img[imgX + imgY * img.axis.first]);
-      ss.sum += img.masked(imgX, imgY, Image::badInput, Image::nan)
+      ss.sum += img.badInputMask[imgCoords] || img.nanMask[imgCoords]
                     ? 0.0
-                    : std::abs(img[imgX + imgY * img.axis.first]);
+                    : std::abs(img[imgCoords]);
     }
   }
 }

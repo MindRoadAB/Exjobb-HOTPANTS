@@ -241,7 +241,7 @@ double calcSig(Stamp& s, std::vector<double>& kernSol, Image& tImg,
       double tDat = tmp[intIndex];
 
       double diff = tDat - sImg[absIndex] + background;
-      if(tImg.masked(absX, absY, Image::badInput, Image::nan) ||
+      if(sImg.badInputMask[absIndex] || sImg.nanMask[absIndex] ||
          std::abs(sImg[absIndex]) <= 1e-10) {
         continue;
       } else {
