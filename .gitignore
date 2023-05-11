@@ -5,12 +5,14 @@
 !Makefile
 !.vsls.json
 !*.cpp
+!*.c
 !*.h
 !*.cl
 !.clang-format
 !CMakeLists.txt
 
-!*.c
+# Don't ignore this file type Here
+!BACH/res/*.fits
 
 # Don't ignore all subfolders
 !*/
