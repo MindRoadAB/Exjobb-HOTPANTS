@@ -1,6 +1,6 @@
 BACH was created as a part of a master thesis conducted at Linköping University during the spring of 2023 by [Annie Wång](https://github.com/th3tard1sparadox) and [Victor Lells](https://github.com/vollells). It is a PSF-alignment and image subtraction tool based on [HOTPANTS](https://github.com/acbecker/hotpants).
 
-***NOTE THAT THIS IS STILL UNDER DEVELOPMENT***
+BACH is currently capable at aligning the PSFs of two FITS images, but has trouble with the subtraction. It cannot handle too large images, but in our general testing up to around 5K x 5K should work fine.
 
 # Installation
 
@@ -25,6 +25,8 @@ BACH depends on the following packages:
 # Usage
 
 BACH will be compiled differently depending on what system you are on, follow the guide for your system below.
+
+There will always be two output images, the convolved image and the subtracted image. The subtracted image will always be named `sub.fits`, while the convolved is `diff.fits` by default.
 
 ## Windows
 
@@ -66,7 +68,8 @@ These are the available command line options. The values within the parenthesis 
 
 ### Optional
 
-    -o [output image filename] // will output a FITS image (diff.fits)
+    -o [output image filename] // will output the convolved FITS image (diff.fits)
     -op [output path]          // (out/)
     -ip [input path]           // (res/)
     -v                         // turn on verbose mode
+    -vt                        // turn on timers
