@@ -10,7 +10,7 @@
 !BACH/res/*.fits
 !.clang-format
 !CMakeLists.txt
-
+!LICENSE
 
 # Don't ignore all subfolders
 !*/
